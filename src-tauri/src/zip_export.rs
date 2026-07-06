@@ -2,16 +2,96 @@ use crate::instance_manager;
 use crate::manifest::{ManifestError, ManifestErrorCode};
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use tauri::Emitter;
 use walkdir::WalkDir;
 use zip::write::FileOptions;
 use zip::ZipWriter;
 
-/// Export an instance to a ZIP file at the specified path.
-/// The ZIP contains the full instance directory including instance.json.
-pub fn export_instance(
+/// Count total files in an instance directory (for progress tracking).
+pub fn count_files(app_data_dir: &Path, instance_name: &str) -> Result<usize, ManifestError> {
+    let instances_dir = instance_manager::get_instances_dir(app_data_dir);
+    let instance_dir = instances_dir.join(sanitize_name(instance_name));
+
+    if !instance_dir.exists() {
+        return Err(ManifestError {
+            code: ManifestErrorCode::NotFound,
+            message: format!("Instance '{}' not found", instance_name),
+        });
+    }
+
+    let count = WalkDir::new(&instance_dir)
+        .min_depth(0)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .count();
+
+    Ok(count)
+}
+
+/// Progress event emitted during export
+#[derive(Clone, serde::Serialize)]
+pub struct ExportProgressEvent {
+    pub current: usize,
+    pub total: usize,
+    pub file_name: String,
+    pub phase: String,
+}
+
+/// Result event emitted when export is complete
+#[derive(Clone, serde::Serialize)]
+pub struct ExportCompleteEvent {
+    pub path: String,
+}
+
+/// Error event emitted when export fails
+#[derive(Clone, serde::Serialize)]
+pub struct ExportErrorEvent {
+    pub message: String,
+}
+
+/// Run the export in a background thread, emitting progress events via the AppHandle.
+/// Returns immediately — the frontend listens for export:progress, export:complete, export:error events.
+/// `total_files` is pre-counted to avoid walking the directory twice.
+pub fn export_instance_background(
+    app_handle: tauri::AppHandle,
+    app_data_dir: PathBuf,
+    instance_name: String,
+    output_path: PathBuf,
+    total_files: usize,
+) {
+    std::thread::spawn(move || {
+        let result = do_export(
+            &app_handle,
+            &app_data_dir,
+            &instance_name,
+            &output_path,
+            total_files,
+        );
+
+        match result {
+            Ok(path) => {
+                let _ = app_handle.emit("export:complete", ExportCompleteEvent {
+                    path: path.to_string_lossy().to_string(),
+                });
+            }
+            Err(err) => {
+                let _ = app_handle.emit("export:error", ExportErrorEvent {
+                    message: err.message,
+                });
+            }
+        }
+    });
+}
+
+/// The actual export work — walks files and compresses them into a ZIP.
+/// `total_files` is pre-counted by the command handler to avoid double directory walk.
+fn do_export(
+    app_handle: &tauri::AppHandle,
     app_data_dir: &Path,
     instance_name: &str,
     output_path: &Path,
+    total_files: usize,
 ) -> Result<PathBuf, ManifestError> {
     let instances_dir = instance_manager::get_instances_dir(app_data_dir);
     let instance_dir = instances_dir.join(sanitize_name(instance_name));
@@ -33,6 +113,8 @@ pub fn export_instance(
     let options = FileOptions::<()>::default()
         .compression_method(zip::CompressionMethod::Deflated)
         .unix_permissions(0o644);
+
+    let mut processed = 0usize;
 
     // Walk through the instance directory and add all files
     for entry in WalkDir::new(&instance_dir).min_depth(0) {
@@ -76,6 +158,20 @@ pub fn export_instance(
                 code: ManifestErrorCode::ParseError,
                 message: format!("Failed to write file to ZIP: {}", e),
             })?;
+
+            processed += 1;
+
+            // Emit progress every file
+            let file_name = name.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            let _ = app_handle.emit("export:progress", ExportProgressEvent {
+                current: processed,
+                total: total_files,
+                file_name,
+                phase: "compressing".to_string(),
+            });
         }
     }
 
@@ -84,6 +180,14 @@ pub fn export_instance(
         code: ManifestErrorCode::ParseError,
         message: format!("Failed to finalize ZIP: {}", e),
     })?;
+
+    // Emit done
+    let _ = app_handle.emit("export:progress", ExportProgressEvent {
+        current: total_files,
+        total: total_files,
+        file_name: String::new(),
+        phase: "done".to_string(),
+    });
 
     Ok(output_path.to_path_buf())
 }

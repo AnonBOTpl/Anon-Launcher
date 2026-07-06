@@ -161,11 +161,27 @@ fn export_instance(
     state: State<'_, AppState>,
     instance_name: String,
     output_path: String,
-) -> Result<String, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let path = zip_export::export_instance(&app_data_dir, &instance_name, &std::path::PathBuf::from(&output_path))
+
+    // Count total files first to validate instance exists
+    let total = zip_export::count_files(&app_data_dir, &instance_name)
         .map_err(|e| e.to_string())?;
-    Ok(path.to_string_lossy().to_string())
+
+    if total == 0 {
+        return Err("No files found in instance directory".to_string());
+    }
+
+    // Launch background thread — returns immediately
+    zip_export::export_instance_background(
+        app_handle.clone(),
+        app_data_dir,
+        instance_name,
+        std::path::PathBuf::from(&output_path),
+        total,
+    );
+
+    Ok(())
 }
 
 #[tauri::command]
