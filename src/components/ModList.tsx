@@ -244,6 +244,7 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
   const [depHasConflicts, setDepHasConflicts] = useState(false);
   const [depCircular, setDepCircular] = useState(false);
   const [depModName, setDepModName] = useState("");
+  const [depInstalling, setDepInstalling] = useState(false);
   // Pending install params saved while dep dialog is shown
   const [pendingInstall, setPendingInstall] = useState<{
     versionId: string;
@@ -374,11 +375,11 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
   }, []);
 
   const handleInstallAnyway = useCallback(async () => {
-    setDepDialogOpen(false);
     if (!pendingInstall) return;
 
     const pi = pendingInstall;
     setPendingInstall(null);
+    setDepInstalling(true);
 
     try {
       // 1. Install missing required dependencies first
@@ -438,10 +439,15 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
         pi.iconUrl,
       );
 
+      // Close dialog AFTER everything is installed
+      setDepDialogOpen(false);
       refresh();
       closeSearch();
     } catch (err) {
       console.error("Install failed:", err);
+      setDepDialogOpen(false);
+    } finally {
+      setDepInstalling(false);
     }
   }, [instanceName, refresh, pendingInstall, instanceMcVersion]);
 
@@ -643,6 +649,7 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
         circularDetected={depCircular}
         loading={depResolving}
         modName={depModName}
+        installing={depInstalling}
         onInstallDeps={handleInstallAnyway}
         onCancel={handleDepsCancel}
       />

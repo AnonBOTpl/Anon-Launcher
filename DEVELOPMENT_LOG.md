@@ -874,6 +874,17 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - `tsc --noEmit` ✅
 - `cargo check` ✅
 
+## 2026-07-07 — UX: Loading spinner podczas instalacji zależności
+
+### Co zostało zrobione
+- **ModList.tsx**: dodano `depInstalling` state — zamiast zamykać dialog od razu po kliknięciu "Zainstaluj N zależności", dialog pozostaje otwarty i pokazuje spinner
+- **MissingDepsWarning.tsx**: dodano `installing` prop — gdy `true`, dialog wyświetla pulsujący spinner z animowanymi kropkami, komunikatem "Instalowanie zależności" i zablokowanym przyciskiem Anuluj
+- Dialog zamyka się automatycznie DOPIERO po zakończeniu instalacji wszystkich zależności i głównego moda
+- Kliknięcie w tło (backdrop) jest zablokowane podczas instalacji
+
+### Build
+- `tsc --noEmit` ✅
+
 ### Status projektu
 
 #### ✅ Ukończone
