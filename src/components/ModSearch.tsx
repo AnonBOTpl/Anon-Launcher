@@ -22,7 +22,7 @@ interface ModDetailsProps {
   mcVersion?: string;
   onBack: () => void;
   isInstalled?: boolean;
-  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
+  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null, dependencies?: ModrinthVersion["dependencies"]) => Promise<void>;
   onUninstall?: () => Promise<void>;
 }
 
@@ -107,6 +107,7 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
           project.title,
           project.slug,
           project.icon_url,
+          selectedVersion.dependencies,
         );
       }
     }
@@ -581,7 +582,7 @@ interface ModSearchProps {
   instanceMcVersion?: string;
   installedMods?: { name: string; fileName: string }[];
   initialQuery?: string;
-  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
+  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null, dependencies?: ModrinthVersion["dependencies"]) => Promise<void>;
   onUninstall?: (fileName: string) => Promise<void>;
 }
 

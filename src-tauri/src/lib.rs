@@ -5,6 +5,7 @@ mod java_manager;
 mod manifest;
 mod manifest_migration;
 mod minecraft_core;
+mod dependency_resolver;
 mod mod_installer;
 mod process_manager;
 mod zip_export;
@@ -90,6 +91,17 @@ fn clone_instance(
 ) -> Result<manifest::InstanceManifest, String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
     instance_manager::clone_instance(&app_data_dir, &source_name, &new_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn resolve_mod_dependencies(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    dependencies: Vec<serde_json::Value>,
+) -> Result<dependency_resolver::ResolveDependenciesResult, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    dependency_resolver::resolve_dependencies(&app_data_dir, &instance_name, dependencies)
 }
 
 #[tauri::command]
@@ -577,6 +589,7 @@ pub fn run() {
             toggle_mod,
             remove_mod,
             update_mod,
+            resolve_mod_dependencies,
             create_instance,
             read_manifest,
             list_instances,

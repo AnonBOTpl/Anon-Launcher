@@ -842,6 +842,38 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - `tsc --noEmit` ✅
 - `cargo check` ✅
 
+## 2026-07-07 — TASK-22: Wykrywanie zależności modów
+
+### Co zostało zrobione
+
+**Nowe pliki:**
+- `src-tauri/src/dependency_resolver.rs` — Rust komenda `resolve_mod_dependencies`: sprawdza które `project_id` są zainstalowane w instancji (registry `mods.json` + filesystem)
+- `src/lib/dependency-resolver.ts` — `checkModDependencies()` (simple check dla flow instalacji) + `resolveDependencies()` (rekurencyjne rozwiązywanie z detekcją cykli i depth limit 3)
+- `src/components/MissingDepsWarning.tsx` — dialog pokazujący brakujące zależności z badge'ami statusu (zainstalowane/brakujące/konflikt), rekurencyjnym wyświetlaniem dzieci, przyciskami "Zainstaluj N zależności" i "Anuluj"
+
+**Zmodyfikowane:**
+- `src-tauri/src/lib.rs` — moduł `dependency_resolver` + komenda zarejestrowana
+- `src/components/ModSearch.tsx` — `onInstall` callback przyjmuje `dependencies[]` z ModrinthVersion
+- `src/components/ModList.tsx` — flow instalacji: sprawdza zależności przed instalacją, pokazuje MissingDepsWarning, po kliknięciu "Zainstaluj N zależności" faktycznie instaluje brakujące mody
+
+**🔥 Fix: Automatyczna instalacja zależności:**
+- `handleInstallAnyway` teraz instaluje brakujące zależności PRZED głównym modem:
+  1. Pobiera projekt z Modrinth API (`getProject(dep.projectId)`) — określa slug, title, icon
+  2. Pobiera wersje pasujące do Fabric + MC wersji instancji (`getProjectVersions`)
+  3. Wybiera najnowszą release + primary file
+  4. Instaluje przez `modApi.installMod()`
+  5. Na końcu instaluje głównego moda
+- `depInfoRef` (useRef) — mirror stanu `depInfo` dostępny w callbacku bez dependency issues
+- **Fix błędu**: `pendingInstall` został przywrócony do dependency array `useCallback` (wcześniej usunięty przez pomyłkę, co powodowało że callback zawsze widział `null`)
+- Error handling: nieudana instalacja pojedynczej zależności nie blokuje reszty
+
+**Usunięte:**
+- `src/hooks/useDependencies.ts` — dead code (nieużywany)
+
+### Build
+- `tsc --noEmit` ✅
+- `cargo check` ✅
+
 ### Status projektu
 
 #### ✅ Ukończone
@@ -877,7 +909,7 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - [ ] **TASK-17** — Monitorowanie postępu
 - [ ] **TASK-18** — Pobieranie assetów i bibliotek
 - [x] **TASK-21** — Aktualizacja modów
-- [ ] **TASK-22** — Wykrywanie zależności
+- [x] **TASK-22** — Wykrywanie zależności
 - [ ] **TASK-23** — Snapshoty
 - [ ] **TASK-24** — Przywracanie snapshotów
 - [ ] **TASK-25** — Obsługa crash-reportów
