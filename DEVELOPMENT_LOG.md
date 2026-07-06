@@ -717,13 +717,115 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - [~] **TASK-28a** — Redesign UI (80%)
 - [~] **TASK-28b** — Motywy, animacje (70%)
 
+## 2026-07-06 — TASK-19 + TASK-20: Modrinth (wyszukiwarka + instalacja modów)
+
+### TASK-19 — Wyszukiwarka modów (Modrinth API)
+
+**Nowe pliki:**
+- `src/types/modrinth.ts` — typy dla API Modrinth v2: ModrinthSearchHit, ModrinthSearchResponse, ModrinthProject, ModrinthVersion, ModrinthSortIndex
+- `src/lib/modrinth.ts` — API klient z cache 2min: `searchMods()`, `getProject()`, `getProjectVersions()`, `formatDownloads()`
+- `src/hooks/useModSearch.ts` — hook z debounce 400ms, AbortController, paginacją (infinite scroll), filtrami (MC version, loader, sort)
+- `src/components/ModSearch.tsx` — pełna wyszukiwarka: search bar, FilterBar (Fabric badge, MC version filter, sort dropdown), lista wyników z infinite scroll, ModDetails (opis, najnowsza wersja, zależności, lista wersji, linki)
+
+**Zmodyfikowane:**
+- `src/components/InstanceTabs.tsx` — zakładka "Mody" wyświetla `<ModSearch />` zamiast placeholder
+
+**Funkcje:**
+- ✅ Wyszukiwanie przez API Modrinth (tylko Fabric mody)
+- ✅ Filtrowanie po wersji Minecraft
+- ✅ Sortowanie (trafność, pobrania, obserwowane, najnowsze, aktualizowane)
+- ✅ Infinite scroll (IntersectionObserver)
+- ✅ Widok szczegółowy: opis, najnowsza wersja, zależności, lista wersji, linki
+- ✅ Obsługa błędów API (rate limiting, offline)
+- ✅ Cieniowanie wyników (ikona, tytuł, autor, pobrania, wersje MC)
+
+### TASK-20 — Instalacja modów
+
+**Nowy backend Rust:**
+- `src-tauri/src/mod_installer.rs` — pełny system zarządzania modami:
+  - `install_mod()` — pobiera JAR przez reqwest::blocking, zapisuje w `mods/`, rejestruje w `mods.json`
+  - `list_mods()` — czyta `mods.json`
+  - `toggle_mod()` — rename `.jar` ↔ `.jar.disabled`
+  - `remove_mod()` — usuwa plik + wpis z rejestru
+- `src-tauri/src/lib.rs` — 4 nowe komendy Tauri: `install_mod`, `list_mods`, `toggle_mod`, `remove_mod`
+
+**Nowe pliki frontend:**
+- `src/lib/mod-installer.ts` — invoke wrappery
+- `src/hooks/useMods.ts` — React hook z install/toggle/remove/refresh
+- `src/components/ModList.tsx` — lista modów: karty z toggle switchem, potwierdzeniem usunięcia, przyciskiem "Dodaj mod" który otwiera ModSearch
+- `src/components/ModDetails.tsx` — przycisk "Zainstaluj" podpięty do instalacji przez API
+
+### Poprawki po testach
+
+**FS sync (ręczne dodawanie/usuwanie z folderu `mods/`):**
+- `sync_registry_with_filesystem()` w Rust — skanuje `.jar`/`.jar.disabled` pliki na dysku przy każdym `list_mods()`:
+  - Usuwa wpisy z rejestru dla plików które zniknęły (ręczne usunięcie)
+  - Dodaje wpisy dla plików które pojawiły się bez rejestracji (ręczne dodanie)
+- `useMods.ts` — polling co 5s (setInterval) dla automatycznej synchronizacji
+
+**MC version filtering:**
+- `InstanceTabs.tsx` — czyta manifest instancji przez `invoke("read_manifest", ...)` i przekazuje `mcVersion` łańcuchem: ModList → ModSearch → ModDetails
+- `ModDetails` — przekazuje `gameVersions: [mcVersion]` do `getProjectVersions()`, wyświetla tylko wersje moda kompatybilne z MC wersją instancji
+- Search facety też filtrują po MC wersji
+
+**project_slug i icon_url:**
+- Dodane do `InstalledMod` w Rust (Option, skip_serializing_if → backward compatible)
+- Zapisuje się podczas instalacji, umożliwia matchowanie modów w przyszłości (TASK-21)
+- Ikona z Modrinth zapisywana w rejestrze
+
+**Installed badge + Odinstaluj:**
+- `ModSearch` — zielona odznaka "Zainstalowany" na kartach wyników gdy mod jest już zainstalowany
+- `ModDetails` — przycisk zmienia się na czerwony "Odinstaluj" dla zainstalowanych modów
+- Matchowanie po nazwie moda (title)
+
+**Lazy icon lookup dla ręcznie dodanych modów:**
+- `src/hooks/useModIcons.ts` — wyszukuje ikony z Modrinth po nazwie moda (fallbacki: pełna nazwa → bez wersji → pierwsze słowo → filename stem)
+- Globalny cache + `fetchedRef` + shallow compare → zero zbędnych API callów i re-renderów
+
+**Fix błędu hooks:**
+- `useState(uninstalling)` był po early returnach (loading/error) w `ModDetails` → przeniesiony przed nie
+
+**Ikona przycisku Zamknij:**
+- Zmieniona z `+` na `X` gdy wyszukiwarka jest otwarta
+
+### Build
+- `tsc --noEmit` ✅
+- `cargo check` ✅
+
+### Status projektu
+
+#### ✅ Ukończone
+- [x] **TASK-01** — Inicjalizacja projektu Tauri + React + TypeScript
+- [x] **TASK-02** — Konfiguracja shadcn/ui
+- [x] **TASK-03** — System manifestów instancji (ze schemaVersion)
+- [x] **TASK-04** — Dashboard z Sidebarem
+- [x] **TASK-05** — Tworzenie instancji
+- [x] **TASK-06** — Klonowanie instancji
+- [x] **TASK-07** — Eksport i import ZIP
+- [x] **TASK-08** — Otwieranie folderu instancji
+- [x] **TASK-09** — Microsoft Device Code Flow (kod gotowy, czeka na Azure)
+- [x] **TASK-10** — Stronghold + zarządzanie kontami
+- [x] **TASK-11** — Moduł pobierania Java (Adoptium)
+- [x] **TASK-12** — Minecraft Core (wersje, biblioteki, launch)
+- [x] **TASK-13** — Uruchamianie Vanilla + Process Manager
+- [x] **TASK-14** — Fabric loader
+- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
+- [x] **TASK-20** — Instalacja modów
+- [x] **TASK-30** — Usuwanie instancji
+- [x] **TASK-31** — Edycja ustawień instancji
+- [x] **TASK-32** — Widok instancji (layout z zakładkami)
+- [x] **TASK-DEV-AUTH** — Mock auth (usunięty, kod produkcyjny)
+
+#### 🔄 W trakcie / Częściowo
+- [~] **TASK-26** — Logi w czasie rzeczywistym (60%)
+- [~] **TASK-28a** — Redesign UI (80%)
+- [~] **TASK-28b** — Motywy, animacje (70%)
+
 #### ❌ Do zrobienia
 - [ ] **TASK-15** — Tryb offline (cached session)
 - [ ] **TASK-16** — Kolejka pobrań (Download Manager)
 - [ ] **TASK-17** — Monitorowanie postępu
 - [ ] **TASK-18** — Pobieranie assetów i bibliotek
-- [ ] **TASK-19** — Wyszukiwarka modów (Modrinth)
-- [ ] **TASK-20** — Instalacja modów
 - [ ] **TASK-21** — Aktualizacja modów
 - [ ] **TASK-22** — Wykrywanie zależności
 - [ ] **TASK-23** — Snapshoty

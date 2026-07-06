@@ -1,5 +1,9 @@
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
+import type { InstanceManifest } from "@/types/instance";
+import ModList from "@/components/ModList";
 
 interface Tab {
   id: string;
@@ -13,40 +17,76 @@ const TABS: Tab[] = [
   { id: "profil", label: "Profil" },
 ];
 
-const TAB_CONTENT: Record<string, React.ReactNode> = {
-  gra: (
-    <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
-      <p className="text-sm text-muted-foreground">
-        Ustawienia gry — zostanie zaimplementowane w TASK-13.
-      </p>
-    </div>
-  ),
-  mody: (
-    <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
-      <p className="text-sm text-muted-foreground">
-        Menedżer modów — zostanie zaimplementowany w TASK-20.
-      </p>
-    </div>
-  ),
-  logi: (
-    <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
-      <p className="text-sm text-muted-foreground">
-        Podgląd logów — zostanie zaimplementowany w TASK-26.
-      </p>
-    </div>
-  ),
-  profil: (
-    <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
-      <p className="text-sm text-muted-foreground">
-        Profil gracza — zostanie zaimplementowany w TASK-27.
-      </p>
-    </div>
-  ),
-};
+function tabContent(
+  tabId: string,
+  instanceName: string | null,
+  instanceMcVersion: string | undefined,
+): React.ReactNode {
+  switch (tabId) {
+    case "mody":
+      return (
+        <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
+          {instanceName ? (
+            <ModList instanceName={instanceName} instanceMcVersion={instanceMcVersion} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Wybierz instancję, aby zarządzać modami.
+            </p>
+          )}
+        </div>
+      );
+    case "logi":
+      return (
+        <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
+          <p className="text-sm text-muted-foreground">
+            Podgląd logów — zostanie zaimplementowany w TASK-26.
+          </p>
+        </div>
+      );
+    case "profil":
+      return (
+        <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
+          <p className="text-sm text-muted-foreground">
+            Profil gracza — zostanie zaimplementowany w TASK-27.
+          </p>
+        </div>
+      );
+    default:
+      return (
+        <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
+          <p className="text-sm text-muted-foreground">
+            Ustawienia gry.
+          </p>
+        </div>
+      );
+  }
+}
 
 function InstanceTabs() {
+  const { id } = useParams<{ id: string }>();
+  const instanceName = id ? decodeURIComponent(id) : null;
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "gra";
+  const [instanceMcVersion, setInstanceMcVersion] = useState<string | undefined>(undefined);
+
+  // Read instance manifest to get MC version
+  useEffect(() => {
+    if (!instanceName) {
+      setInstanceMcVersion(undefined);
+      return;
+    }
+    let cancelled = false;
+    invoke<{ manifest: InstanceManifest }>("read_manifest", { instanceName })
+      .then((result) => {
+        if (!cancelled) {
+          setInstanceMcVersion(result.manifest.mcVersion);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setInstanceMcVersion(undefined);
+      });
+    return () => { cancelled = true; };
+  }, [instanceName]);
 
   const setActiveTab = (tabId: string) => {
     setSearchParams(
@@ -84,7 +124,7 @@ function InstanceTabs() {
 
       {/* Tab content */}
       <div className="mt-6 animate-fade-in">
-        {TAB_CONTENT[activeTab] ?? TAB_CONTENT.gra}
+        {tabContent(activeTab, instanceName, instanceMcVersion)}
       </div>
     </div>
   );

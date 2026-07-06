@@ -5,6 +5,7 @@ mod java_manager;
 mod manifest;
 mod manifest_migration;
 mod minecraft_core;
+mod mod_installer;
 mod process_manager;
 mod zip_export;
 mod zip_import;
@@ -449,6 +450,57 @@ fn get_instance_status(
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+// ─── Mod Installer Commands ─────────────────────────────────────────
+
+#[tauri::command]
+fn install_mod(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    version_id: String,
+    download_url: String,
+    file_name: String,
+    mod_name: String,
+    project_slug: Option<String>,
+    icon_url: Option<String>,
+) -> Result<mod_installer::InstalledMod, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    mod_installer::install_mod(&app_data_dir, &instance_name, version_id, download_url, file_name, mod_name, project_slug, icon_url)
+}
+
+#[tauri::command]
+fn list_mods(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+) -> Result<Vec<mod_installer::InstalledMod>, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    mod_installer::list_mods(&app_data_dir, &instance_name)
+}
+
+#[tauri::command]
+fn toggle_mod(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    file_name: String,
+    enabled: bool,
+) -> Result<mod_installer::InstalledMod, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    mod_installer::toggle_mod(&app_data_dir, &instance_name, file_name, enabled)
+}
+
+#[tauri::command]
+fn remove_mod(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    file_name: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    mod_installer::remove_mod(&app_data_dir, &instance_name, file_name)
+}
+
 fn get_app_data_dir(app_handle: &AppHandle, state: &State<'_, AppState>) -> Result<std::path::PathBuf, String> {
     let mut guard = state.app_data_dir.lock().map_err(|e| format!("Lock error: {}", e))?;
 
@@ -494,6 +546,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            install_mod,
+            list_mods,
+            toggle_mod,
+            remove_mod,
             create_instance,
             read_manifest,
             list_instances,
