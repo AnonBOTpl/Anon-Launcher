@@ -1,0 +1,16 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for AnonLauncher",
+  "windows": ["*"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "shell:default",
+    "shell:allow-open",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:default",
+    "stronghold:default"
+  ]
+}
