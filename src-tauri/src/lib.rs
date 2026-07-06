@@ -458,6 +458,7 @@ fn install_mod(
     state: State<'_, AppState>,
     instance_name: String,
     version_id: String,
+    version_number: String,
     download_url: String,
     file_name: String,
     mod_name: String,
@@ -465,7 +466,7 @@ fn install_mod(
     icon_url: Option<String>,
 ) -> Result<mod_installer::InstalledMod, String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    mod_installer::install_mod(&app_data_dir, &instance_name, version_id, download_url, file_name, mod_name, project_slug, icon_url)
+    mod_installer::install_mod(&app_data_dir, &instance_name, version_id, version_number, download_url, file_name, mod_name, project_slug, icon_url)
 }
 
 #[tauri::command]
@@ -499,6 +500,31 @@ fn remove_mod(
 ) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
     mod_installer::remove_mod(&app_data_dir, &instance_name, file_name)
+}
+
+#[tauri::command]
+fn update_mod(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    old_file_name: String,
+    new_file_name: String,
+    download_url: String,
+    new_version_id: String,
+    new_version_number: String,
+    icon_url: Option<String>,
+) -> Result<mod_installer::InstalledMod, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    mod_installer::update_mod(
+        &app_data_dir,
+        &instance_name,
+        old_file_name,
+        new_file_name,
+        download_url,
+        new_version_id,
+        new_version_number,
+        icon_url,
+    )
 }
 
 fn get_app_data_dir(app_handle: &AppHandle, state: &State<'_, AppState>) -> Result<std::path::PathBuf, String> {
@@ -550,6 +576,7 @@ pub fn run() {
             list_mods,
             toggle_mod,
             remove_mod,
+            update_mod,
             create_instance,
             read_manifest,
             list_instances,

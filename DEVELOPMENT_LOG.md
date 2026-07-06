@@ -617,7 +617,7 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 - [ ] **TASK-18** — Pobieranie assetów i bibliotek (asset/biblioteki są pobierane bezpośrednio, nie przez Download Manager)
 - [ ] **TASK-19** — Wyszukiwarka modów (Modrinth)
 - [ ] **TASK-20** — Instalacja modów
-- [ ] **TASK-21** — Aktualizacja modów
+- [x] **TASK-21** — Aktualizacja modów
 - [ ] **TASK-22** — Wykrywanie zależności
 - [ ] **TASK-23** — Snapshoty
 - [ ] **TASK-24** — Przywracanie snapshotów
@@ -792,6 +792,56 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - `tsc --noEmit` ✅
 - `cargo check` ✅
 
+## 2026-07-07 — TASK-21: Aktualizacja modów (Modrinth API) + redesign UI
+
+### Co zostało zrobione
+
+**TASK-21 — Aktualizacja modów (pierwsza iteracja):**
+- **Backend Rust** (`mod_installer.rs`, `lib.rs`): nowa komenda `update_mod` — pobiera nowy JAR, usuwa stare pliki (`.jar` i `.jar.disabled`), aktualizuje registry
+- **Frontend API** (`mod-updater.ts`): `checkModUpdates()` — batchowe sprawdzanie przez API Modrinth (batch 5); `updateMod()` — invoke wrapper
+- **Hook** (`useModUpdates.ts`): auto-sprawdzanie na starcie, polling co 5 min, bezpieczeństwo przez abortRef
+- **Modal** (`ModUpdateDialog.tsx`): dialog z listą modów, checkboxy (zaznacz wszystkie), per-mod "Aktualizuj", batch "Aktualizuj (N)", przycisk "Sprawdź ponownie"
+- **UI** (`ModList.tsx`): przycisk "Aktualizacje" w headerze, pomarańczowy badge "N aktualizacji", badge "Aktualizacja" na ModCard
+
+**🔥 Fix: Infinite spinner w dialogu aktualizacji:**
+- **Przyczyna**: `checking` w `useCallback` deps → `setChecking(true)` zmieniał referencję `checkNow` → `useEffect` odpalał cleanup → cleanup ustawiał `abortRef=true` → `finally` nie wykonywał `setChecking(false)` → spinner kręcił się wiecznie
+- **Fix**: Ref-based guard (`checkingRef`) zamiast state dla concurrent-call guard; `checking` usunięte z deps `useCallback`; cleanup tylko czyści interval
+- **Timeout**: `AbortController` + 10s timeout we wszystkich fetchach w `modrinth.ts` (`searchMods`, `getProject`, `getProjectVersions`)
+- **Progress**: Progress bar + nazwa moda + procent w dialogu
+- **Error display**: Błędy wyświetlane w dialogu na czerwono
+
+**Dropdown wersji w ModDetails (ModSearch.tsx):**
+- `selectedVersionIdx` state + `<select>` dropdown z wszystkimi wersjami (filtrowanymi po MC wersji instancji)
+- "Zainstaluj" pobiera wybraną wersję z `version_number`
+- Detale wersji (numer, loadery, MC wersje, pobrania) poniżej dropdownu
+
+**Redesign systemu aktualizacji (druga iteracja):**
+- **Usunięto** `stripVersionFromName()` i search fallback dla modów bez `projectSlug` — `checkModUpdates` sprawdza tylko mody zainstalowane przez aplikację
+- **Usunięto** `ModUpdateDialog.tsx` (cały modal wywalony, plik usunięty)
+- **ModCard**: pokazuje wersję moda z backendu (`versionNumber`), ikona download dla modów z aktualizacją, ikona lupy (szukaj) dla modów bez `projectSlug`
+- **Header**: "Aktualizacje" zmienia się w licznik "N aktualizacji"; gradientowy przycisk "Aktualizuj wszystkie (N)" gdy są aktualizacje
+- **Progress**: Pasek postępu inline (zamiast w modalu) podczas sprawdzania
+
+**version_number w Rust backend:**
+- Dodane `version_number: String` do `InstalledMod` z `#[serde(default)]` (backward compatibility — stare `mods.json` bez tego pola się zdeserializują)
+- Przekazywane przez `install_mod` i `update_mod` jako nowy parametr
+
+**ModSearch — initialQuery prop:**
+- Nowy `initialQuery` prop — pre-fill wyszukiwarki z nazwą moda
+- `cleanSearchQuery()` helper stripujący wersje z nazwy przed wyszukiwaniem
+
+**Fix: Duplikaty React keyów:**
+- `useModSearch.ts`: deduplikacja wyników po `project_id` przy append — zapobiega "Encountered two children with the same key"
+
+**Fix: Błędy TypeScript:**
+- `ModDetailsProps.onInstall` — brakowało `versionNumber` w sygnaturze
+- `ModCard` — usunięto nieużywany `updating` prop
+- `useMods.ts` — usunięto nieużywany `install` (dead code)
+
+### Build
+- `tsc --noEmit` ✅
+- `cargo check` ✅
+
 ### Status projektu
 
 #### ✅ Ukończone
@@ -826,7 +876,7 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - [ ] **TASK-16** — Kolejka pobrań (Download Manager)
 - [ ] **TASK-17** — Monitorowanie postępu
 - [ ] **TASK-18** — Pobieranie assetów i bibliotek
-- [ ] **TASK-21** — Aktualizacja modów
+- [x] **TASK-21** — Aktualizacja modów
 - [ ] **TASK-22** — Wykrywanie zależności
 - [ ] **TASK-23** — Snapshoty
 - [ ] **TASK-24** — Przywracanie snapshotów

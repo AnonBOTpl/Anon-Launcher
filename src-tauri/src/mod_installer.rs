@@ -11,6 +11,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct InstalledMod {
     pub name: String,
     pub version_id: String,
+    #[serde(default)]
+    pub version_number: String,
     pub file_name: String,
     pub enabled: bool,
     pub installed_at: String,
@@ -127,15 +129,14 @@ fn sync_registry_with_filesystem(mods_dir: &std::path::Path) -> Vec<InstalledMod
 
     // Collect current registry file names for lookup
     let registry_names: HashSet<String> =
-        registry.mods.iter().map(|m| m.file_name.clone()).collect();
-
-    // Add orphan files from disk that aren't in registry
+        registry.mods.iter().map(|m| m.file_name.clone()).collect();        // Add orphan files from disk that aren't in registry
     for file_name in &disk_files {
         if !registry_names.contains(file_name) {
             let enabled = !file_name.ends_with(".disabled");
             registry.mods.push(InstalledMod {
                 name: derive_name_from_filename(file_name),
                 version_id: String::new(),
+                version_number: String::new(),
                 file_name: file_name.clone(),
                 enabled,
                 installed_at: now_iso(),
@@ -158,6 +159,7 @@ pub fn install_mod(
     app_data_dir: &std::path::Path,
     instance_name: &str,
     version_id: String,
+    version_number: String,
     download_url: String,
     file_name: String,
     mod_name: String,
@@ -194,6 +196,7 @@ pub fn install_mod(
     let installed_mod = InstalledMod {
         name: mod_name,
         version_id,
+        version_number,
         file_name,
         enabled: true,
         installed_at: now_iso(),
@@ -263,6 +266,7 @@ pub fn toggle_mod(
     let updated = InstalledMod {
         name: registry.mods[idx].name.clone(),
         version_id: registry.mods[idx].version_id.clone(),
+        version_number: registry.mods[idx].version_number.clone(),
         file_name: new_name,
         enabled,
         installed_at: registry.mods[idx].installed_at.clone(),
@@ -296,4 +300,80 @@ pub fn remove_mod(
     }
 
     Ok(())
+}
+
+/// Update a mod: download new JAR, remove old files, update registry.
+pub fn update_mod(
+    app_data_dir: &std::path::Path,
+    instance_name: &str,
+    old_file_name: String,
+    new_file_name: String,
+    download_url: String,
+    new_version_id: String,
+    new_version_number: String,
+    icon_url: Option<String>,
+) -> Result<InstalledMod, String> {
+    let mods_dir = get_instance_mods_dir(app_data_dir, instance_name);
+
+    if !mods_dir.exists() {
+        return Err("Mods directory does not exist".to_string());
+    }
+
+    // Download the new JAR
+    let new_jar_path = mods_dir.join(&new_file_name);
+
+    let response = reqwest::blocking::get(&download_url)
+        .map_err(|e| format!("Failed to download mod update: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Download failed with status: {}", response.status()));
+    }
+
+    let bytes = response
+        .bytes()
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    fs::write(&new_jar_path, &bytes).map_err(|e| format!("Failed to write JAR: {}", e))?;
+
+    // Read registry
+    let mut registry = read_registry(&mods_dir);
+
+    // Find the mod in registry
+    let idx = registry
+        .mods
+        .iter()
+        .position(|m| m.file_name == old_file_name)
+        .ok_or_else(|| format!("Mod '{}' not found in registry", old_file_name))?;
+
+    // Preserve old data
+    let old_mod = &registry.mods[idx];
+
+    // Remove old files (both .jar and .jar.disabled variants)
+    let old_path_jar = mods_dir.join(&old_file_name);
+    if old_path_jar.exists() {
+        fs::remove_file(&old_path_jar).map_err(|e| format!("Failed to remove old mod file: {}", e))?;
+    }
+    // Also check for .disabled variant (if old was enabled, there might be a disabled copy)
+    let old_name_stem = old_file_name.trim_end_matches(".disabled");
+    let old_path_disabled = mods_dir.join(format!("{}.disabled", old_name_stem));
+    if old_path_disabled.exists() {
+        fs::remove_file(&old_path_disabled).map_err(|e| format!("Failed to remove old disabled file: {}", e))?;
+    }
+
+    // Update registry entry
+    let updated = InstalledMod {
+        name: old_mod.name.clone(),
+        version_id: new_version_id,
+        version_number: new_version_number,
+        file_name: new_file_name,
+        enabled: old_mod.enabled,
+        installed_at: now_iso(),
+        project_slug: old_mod.project_slug.clone(),
+        icon_url: icon_url.or_else(|| old_mod.icon_url.clone()),
+    };
+    registry.mods[idx] = updated.clone();
+
+    write_registry(&mods_dir, &registry)?;
+
+    Ok(updated)
 }

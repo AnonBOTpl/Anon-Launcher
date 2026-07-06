@@ -22,7 +22,7 @@ interface ModDetailsProps {
   mcVersion?: string;
   onBack: () => void;
   isInstalled?: boolean;
-  onInstall?: (versionId: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
+  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
   onUninstall?: () => Promise<void>;
 }
 
@@ -33,6 +33,7 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
   const [error, setError] = useState<string | null>(null);
   const [showFullBody, setShowFullBody] = useState(false);
   const [uninstalling, setUninstalling] = useState(false);
+  const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +66,12 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
     return () => { cancelled = true; };
   }, [slug]);
 
+  // Reset selected version when versions change (new slug)
+  // IMPORTANT: All hooks must be before early returns!
+  useEffect(() => {
+    setSelectedVersionIdx(0);
+  }, [versions]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -82,10 +89,28 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
     );
   }
 
-  // Pick latest release version (already filtered by fabric + mcVersion via API)
-  const latestVersion = versions.find(
+  // Selected version from dropdown
+  const selectedVersion = versions[selectedVersionIdx] ?? versions.find(
     (v) => v.version_type === "release",
   ) ?? versions[0];
+
+  // Install the currently selected version
+  const handleInstallSelected = () => {
+    if (onInstall && selectedVersion) {
+      const primaryFile = selectedVersion.files.find((f) => f.primary) ?? selectedVersion.files[0];
+      if (primaryFile) {
+        onInstall(
+          selectedVersion.id,
+          selectedVersion.version_number,
+          primaryFile.url,
+          primaryFile.filename,
+          project.title,
+          project.slug,
+          project.icon_url,
+        );
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -172,19 +197,29 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
         )}
       </div>
 
-      {/* Latest version */}
-      {latestVersion && (
+      {/* Select version + install */}
+      {selectedVersion && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Najnowsza wersja
+            Wybierz wersję
           </h3>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">{latestVersion.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {latestVersion.version_number} · {latestVersion.loaders.join(", ")} · {latestVersion.game_versions.join(", ")}
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            {/* Version dropdown */}
+            <select
+              value={selectedVersionIdx}
+              onChange={(e) => setSelectedVersionIdx(Number(e.target.value))}
+              className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-2 text-xs outline-none focus:border-ring"
+            >
+              {versions.map((v, i) => (
+                <option key={v.id} value={i}>
+                  {v.version_number}
+                  {v.version_type !== "release" ? ` (${v.version_type})` : ""}
+                  {" — "}{v.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Install / Uninstall button */}
             {isInstalled ? (
               <Button
                 size="sm"
@@ -209,22 +244,8 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
             ) : (
               <Button
                 size="sm"
-                onClick={() => {
-                  if (onInstall && latestVersion) {
-                    const primaryFile = latestVersion.files.find((f) => f.primary) ?? latestVersion.files[0];
-                    if (primaryFile) {
-                      onInstall(
-                        latestVersion.id,
-                        primaryFile.url,
-                        primaryFile.filename,
-                        project.title,
-                        project.slug,
-                        project.icon_url,
-                      );
-                    }
-                  }
-                }}
-                disabled={!onInstall || !latestVersion}
+                onClick={handleInstallSelected}
+                disabled={!onInstall || !selectedVersion}
                 className="shrink-0 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
@@ -236,17 +257,31 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
               </Button>
             )}
           </div>
+          {/* Selected version details */}
+          {selectedVersion && selectedVersionIdx !== undefined && (
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span>{selectedVersion.version_number}</span>
+              <span>{selectedVersion.loaders.join(", ")}</span>
+              <span>{selectedVersion.game_versions.join(", ")}</span>
+              <span>{formatDownloads(selectedVersion.downloads)} pobrań</span>
+              {selectedVersion.version_type !== "release" && (
+                <span className={cn("uppercase font-medium", selectedVersion.version_type === "beta" ? "text-amber-400" : "text-red-400")}>
+                  {selectedVersion.version_type}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* Dependencies */}
-      {latestVersion && latestVersion.dependencies.length > 0 && (
+      {selectedVersion && selectedVersion.dependencies.length > 0 && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Zależności
           </h3>
           <div className="space-y-1.5">
-            {latestVersion.dependencies.map((dep, i) => (
+            {selectedVersion.dependencies.map((dep, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
                 {dep.dependency_type === "required" && (
                   <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive font-medium">Wymagane</span>
@@ -295,6 +330,19 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
 
       {/* Links */}
       <div className="flex flex-wrap gap-2">
+        {/* Modrinth page — always available */}
+        <a
+          href={`https://modrinth.com/mod/${project.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-purple-400 hover:text-purple-300 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+          Modrinth
+        </a>
         {project.source_url && (
           <a href={project.source_url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -418,10 +466,33 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
 
 // ─── Filter Bar ─────────────────────────────────────────────────────
 
+const CATEGORIES = [
+  { id: "", label: "Wszystkie kategorie" },
+  { id: "technology", label: "Technologia" },
+  { id: "optimization", label: "Optymalizacja" },
+  { id: "adventure", label: "Przygoda" },
+  { id: "magic", label: "Magia" },
+  { id: "combat", label: "Walka" },
+  { id: "worldgen", label: "Generowanie świata" },
+  { id: "storage", label: "Przechowywanie" },
+  { id: "utility", label: "Narzędzia" },
+  { id: "decoration", label: "Dekoracje" },
+  { id: "food", label: "Jedzenie" },
+  { id: "game-mechanics", label: "Mechaniki" },
+  { id: "library", label: "Biblioteki" },
+  { id: "mobs", label: "Moby" },
+  { id: "social", label: "Społeczność" },
+  { id: "transport", label: "Transport" },
+  { id: "cursed", label: "Cursed" },
+  { id: "misc", label: "Inne" },
+];
+
 interface FilterBarProps {
   mcVersion?: string;
+  category?: string;
   sort: string;
   onMcVersionChange: (v: string | undefined) => void;
+  onCategoryChange: (c: string | undefined) => void;
   onSortChange: (s: string) => void;
 }
 
@@ -433,7 +504,7 @@ const SORT_OPTIONS = [
   { id: "updated", label: "Aktualizowane" },
 ];
 
-function FilterBar({ mcVersion, sort, onMcVersionChange, onSortChange }: FilterBarProps) {
+function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryChange, onSortChange }: FilterBarProps) {
   const [showMcInput, setShowMcInput] = useState(false);
   const [mcInput, setMcInput] = useState(mcVersion ?? "");
 
@@ -477,6 +548,17 @@ function FilterBar({ mcVersion, sort, onMcVersionChange, onSortChange }: FilterB
         </button>
       )}
 
+      {/* Category dropdown */}
+      <select
+        value={category ?? ""}
+        onChange={(e) => onCategoryChange(e.target.value || undefined)}
+        className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground outline-none focus:border-ring"
+      >
+        {CATEGORIES.map((cat) => (
+          <option key={cat.id} value={cat.id}>{cat.label}</option>
+        ))}
+      </select>
+
       {/* Sort dropdown */}
       <div className="ml-auto">
         <select
@@ -498,11 +580,12 @@ function FilterBar({ mcVersion, sort, onMcVersionChange, onSortChange }: FilterB
 interface ModSearchProps {
   instanceMcVersion?: string;
   installedMods?: { name: string; fileName: string }[];
-  onInstall?: (versionId: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
+  initialQuery?: string;
+  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null) => Promise<void>;
   onUninstall?: (fileName: string) => Promise<void>;
 }
 
-function ModSearch({ instanceMcVersion, installedMods, onInstall, onUninstall }: ModSearchProps) {
+function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, onUninstall }: ModSearchProps) {
   const {
     results,
     loading,
@@ -515,7 +598,22 @@ function ModSearch({ instanceMcVersion, installedMods, onInstall, onUninstall }:
   } = useModSearch({ mcVersion: instanceMcVersion });
 
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Pre-fill search query from initialQuery prop
+  useEffect(() => {
+    if (initialQuery) {
+      setFilter("query", initialQuery);
+    }
+  }, [initialQuery, setFilter]);
+
+  // Scroll to top when opening mod details
+  useEffect(() => {
+    if (selectedSlug) {
+      searchContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [selectedSlug]);
 
   // Infinite scroll
   useEffect(() => {
@@ -563,7 +661,7 @@ function ModSearch({ instanceMcVersion, installedMods, onInstall, onUninstall }:
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={searchContainerRef}>
       {/* Search bar */}
       <div className="relative">
         <div className="flex items-center gap-2 rounded-xl border border-input bg-background px-3 py-2.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
@@ -605,8 +703,10 @@ function ModSearch({ instanceMcVersion, installedMods, onInstall, onUninstall }:
       {/* Filters */}
       <FilterBar
         mcVersion={filters.mcVersion}
+        category={filters.category}
         sort={filters.sort}
         onMcVersionChange={(v) => setFilter("mcVersion", v)}
+        onCategoryChange={(c) => setFilter("category", c)}
         onSortChange={(s) => setFilter("sort", s as "relevance" | "downloads" | "follows" | "newest" | "updated")}
       />
 

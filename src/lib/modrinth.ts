@@ -66,8 +66,12 @@ export async function searchMods(params: {
   const cached = getCached(searchCache, cacheKey);
   if (cached) return cached;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   const url = `${API_BASE}/search?${searchParams.toString()}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeout);
 
   if (!response.ok) {
     if (response.status === 429) {
@@ -88,8 +92,12 @@ export async function getProject(slug: string): Promise<ModrinthProject> {
   const cached = getCached(projectCache, slug);
   if (cached) return cached;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   const url = `${API_BASE}/project/${encodeURIComponent(slug)}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeout);
 
   if (!response.ok) {
     if (response.status === 429) {
@@ -120,8 +128,12 @@ export async function getProjectVersions(
   const cached = getCached(versionsCache, cacheKey);
   if (cached) return cached;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   const url = `${API_BASE}/project/${encodeURIComponent(slug)}/version`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeout);
 
   if (!response.ok) {
     if (response.status === 429) {

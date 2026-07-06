@@ -37,30 +37,7 @@ export function useMods(instanceName: string | null) {
     return () => clearInterval(interval);
   }, [instanceName, refresh]);
 
-  const install = useCallback(
-    async (
-      versionId: string,
-      downloadUrl: string,
-      fileName: string,
-      modName: string,
-      projectSlug?: string,
-      iconUrl?: string | null,
-    ) => {
-      if (!instanceName) return null;
-      const mod = await modApi.installMod(
-        instanceName,
-        versionId,
-        downloadUrl,
-        fileName,
-        modName,
-        projectSlug,
-        iconUrl,
-      );
-      await refresh();
-      return mod;
-    },
-    [instanceName, refresh],
-  );
+
 
   const toggle = useCallback(
     async (fileName: string, enabled: boolean) => {
@@ -84,7 +61,6 @@ export function useMods(instanceName: string | null) {
     mods,
     loading,
     error,
-    install,
     toggle,
     remove,
     refresh,

@@ -8,6 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface InstalledMod {
   name: string;
   versionId: string;
+  versionNumber: string;
   fileName: string;
   enabled: boolean;
   installedAt: string;
@@ -19,6 +20,7 @@ export interface InstalledMod {
 export async function installMod(
   instanceName: string,
   versionId: string,
+  versionNumber: string,
   downloadUrl: string,
   fileName: string,
   modName: string,
@@ -28,6 +30,7 @@ export async function installMod(
   return invoke<InstalledMod>("install_mod", {
     instanceName,
     versionId,
+    versionNumber,
     downloadUrl,
     fileName,
     modName,

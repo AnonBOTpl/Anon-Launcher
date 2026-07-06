@@ -6,6 +6,7 @@ export interface ModSearchFilters {
   query: string;
   mcVersion?: string;
   loader: string;
+  category?: string;
   sort: ModrinthSortIndex;
 }
 
@@ -25,6 +26,7 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
     query: "",
     mcVersion: initialFilters?.mcVersion,
     loader: initialFilters?.loader ?? "fabric",
+    category: initialFilters?.category,
     sort: initialFilters?.sort ?? "relevance",
   });
 
@@ -61,6 +63,11 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
           facets.push([`categories:${searchFilters.loader}`]);
         }
 
+        // Filter by category
+        if (searchFilters.category) {
+          facets.push([`categories:${searchFilters.category}`]);
+        }
+
         // Filter by Minecraft version
         if (searchFilters.mcVersion) {
           facets.push([`versions:${searchFilters.mcVersion}`]);
@@ -76,14 +83,27 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
 
         if (controller.signal.aborted) return;
 
-        setState((prev) => ({
-          results: append ? [...prev.results, ...result.hits] : result.hits,
-          loading: false,
-          error: null,
-          totalHits: result.total_hits,
-          offset: offset + result.hits.length,
-          hasMore: offset + result.hits.length < result.total_hits,
-        }));
+        setState((prev) => {
+          // Deduplicate by project_id when appending (stale closures can cause duplicates)
+          const newResults = append
+            ? (() => {
+                const existingIds = new Set(prev.results.map((r) => r.project_id));
+                const uniqueNew = result.hits.filter(
+                  (h) => !existingIds.has(h.project_id),
+                );
+                return [...prev.results, ...uniqueNew];
+              })()
+            : result.hits;
+
+          return {
+            results: newResults,
+            loading: false,
+            error: null,
+            totalHits: result.total_hits,
+            offset: offset + result.hits.length,
+            hasMore: offset + result.hits.length < result.total_hits,
+          };
+        });
       } catch (err) {
         if ((err as Error)?.name === "AbortError" || controller.signal.aborted) return;
         const message = err instanceof Error ? err.message : "Wystąpił nieznany błąd";
