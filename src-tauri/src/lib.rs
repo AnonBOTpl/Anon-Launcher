@@ -26,6 +26,7 @@ struct AppState {
     app_data_dir: Mutex<Option<std::path::PathBuf>>,
     process_manager: Mutex<process_manager::ProcessManager>,
     auth_code: Arc<Mutex<Option<String>>>,
+    modpack_cancel: Arc<std::sync::atomic::AtomicBool>,
 }
 
 // ─── Tauri Commands ─────────────────────────────────────────────────
@@ -625,9 +626,28 @@ fn create_instance_from_modpack(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     input: modpack_installer::CreateFromModpackInput,
-) -> Result<modpack_installer::CreateFromModpackResult, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    modpack_installer::create_from_modpack(app_handle.clone(), app_data_dir, input)
+
+    // Reset cancel flag before starting
+    state.modpack_cancel.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    modpack_installer::create_from_modpack_background(
+        app_handle,
+        app_data_dir,
+        input,
+        state.modpack_cancel.clone(),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+fn cancel_modpack_installation(
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.modpack_cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+    Ok(())
 }
 
 // ─── Snapshot Commands ────────────────────────────────────────────
@@ -718,6 +738,7 @@ pub fn run() {
             app_data_dir: Mutex::new(None),
             process_manager: Mutex::new(process_manager::ProcessManager::new()),
             auth_code: Arc::new(Mutex::new(None)),
+            modpack_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -771,6 +792,7 @@ pub fn run() {
             list_instance_content,
             remove_instance_content,
             create_instance_from_modpack,
+            cancel_modpack_installation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

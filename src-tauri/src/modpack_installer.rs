@@ -153,22 +153,126 @@ fn copy_dir_recursively(src: &Path, dst: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+// ─── URL Parsing ────────────────────────────────────────────────────
+
+/// Parse a Modrinth CDN URL to extract project_id and version_id.
+/// Format: https://cdn.modrinth.com/data/{projectId}/versions/{versionId}/{fileName}
+fn parse_modrinth_url(url: &str) -> Option<(String, String)> {
+    let path = url.strip_prefix("https://cdn.modrinth.com/data/")?;
+    let parts: Vec<&str> = path.splitn(2, '/').collect();
+    let project_id = parts.first()?.to_string();
+    let rest = parts.get(1)?.strip_prefix("versions/")?;
+    let parts2: Vec<&str> = rest.splitn(2, '/').collect();
+    let version_id = parts2.first()?.to_string();
+    Some((project_id, version_id))
+}
+
+// ─── Modrinth API Helpers ───────────────────────────────────────────
+
+/// Fetch project metadata from Modrinth API. Returns (title, slug, icon_url).
+fn fetch_project_metadata(project_id: &str) -> Option<(String, String, String)> {
+    let url = format!("https://api.modrinth.com/v2/project/{}", project_id);
+    let resp = reqwest::blocking::get(&url).ok()?;
+    if !resp.status().is_success() { return None; }
+    let body: serde_json::Value = resp.json().ok()?;
+    let title = body.get("title")?.as_str()?.to_string();
+    let slug = body.get("slug")?.as_str()?.to_string();
+    let icon_url = body.get("icon_url")?.as_str().map(|s| s.to_string());
+    Some((title, slug, icon_url.unwrap_or_default()))
+}
+
+/// Fetch the version_number for a specific version_id from Modrinth API.
+fn fetch_version_number(project_id: &str, version_id: &str) -> Option<String> {
+    let url = format!("https://api.modrinth.com/v2/project/{}/version", project_id);
+    let resp = reqwest::blocking::get(&url).ok()?;
+    if !resp.status().is_success() { return None; }
+    let versions: Vec<serde_json::Value> = resp.json().ok()?;
+    for v in &versions {
+        if v.get("id")?.as_str()? == version_id {
+            return v.get("version_number")?.as_str().map(|s| s.to_string());
+        }
+    }
+    None
+}
+
+// ─── Background Thread API ──────────────────────────────────────────
+
+/// Event emitted when modpack installation completes successfully
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModpackDoneEvent {
+    pub instance_name: String,
+}
+
+/// Event emitted when modpack installation fails
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModpackErrorEvent {
+    pub message: String,
+}
+
+/// Launch modpack installation in a background thread.
+/// Returns immediately; progress/completion/error sent via events.
+pub fn create_from_modpack_background(
+    app_handle: AppHandle,
+    app_data_dir: PathBuf,
+    input: CreateFromModpackInput,
+    cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) {
+    std::thread::spawn(move || {
+        let result = create_from_modpack_inner(
+            &app_handle,
+            &app_data_dir,
+            &input,
+            &cancel_flag,
+        );
+
+        match result {
+            Ok(res) => {
+                let _ = app_handle.emit("modpack:done", ModpackDoneEvent {
+                    instance_name: res.instance_name,
+                });
+            }
+            Err(e) => {
+                // If cancelled, emit cancelled event with short message
+                let msg = if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                    "Anulowano".to_string()
+                } else {
+                    e
+                };
+                let _ = app_handle.emit("modpack:error", ModpackErrorEvent {
+                    message: msg,
+                });
+            }
+        }
+    });
+}
+
 // ─── Public API ─────────────────────────────────────────────────────
 
-/// Create a new instance from a Modrinth modpack (.mrpack).
-///
-/// Process:
-/// 1. Download .mrpack to temp directory
-/// 2. Extract modrinth.index.json
-/// 3. Create instance with correct MC version + loader from dependencies
-/// 4. Download all files from files[] array
-/// 5. Copy overrides/ to instance
-/// 6. Clean up temp files
+/// Create a new instance from a Modrinth modpack (.mrpack) — runs synchronously.
+/// Use `create_from_modpack_background` for non-blocking usage.
 pub fn create_from_modpack(
     app_handle: AppHandle,
     app_data_dir: PathBuf,
     input: CreateFromModpackInput,
 ) -> Result<CreateFromModpackResult, String> {
+    let cancel_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    create_from_modpack_inner(&app_handle, &app_data_dir, &input, &cancel_flag)
+}
+
+/// Internal implementation — accepts a cancellation flag.
+fn create_from_modpack_inner(
+    app_handle: &AppHandle,
+    app_data_dir: &Path,
+    input: &CreateFromModpackInput,
+    cancel_flag: &std::sync::atomic::AtomicBool,
+) -> Result<CreateFromModpackResult, String> {
+    // Check cancellation before starting
+    if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err("Anulowano".to_string());
+    }
+
     let temp_dir = create_temp_dir()?;
     let mrpack_path = temp_dir.join("modpack.mrpack");
 
@@ -371,6 +475,91 @@ pub fn create_from_modpack(
                                 });
                             } else {
                                 downloaded += 1;
+
+                                // ── Check cancellation before metadata fetch ──
+                                if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+                                    // Clean up: delete the partially created instance
+                                    let _ = fs::remove_dir_all(&instance_dir);
+                                    // Clean up: delete temp files
+                                    let _ = fs::remove_dir_all(&temp_dir);
+                                    return Err("Anulowano".to_string());
+                                }
+
+                                // ── Register mod metadata if file is in mods/ ──
+                                if file_entry.path.starts_with("mods/") || file_entry.path.starts_with("mods\\") {
+                                    // Extract the file name from the path (e.g. "mods/sodium.jar" → "sodium.jar")
+                                    let file_name = file_entry.path
+                                        .trim_start_matches("mods/")
+                                        .trim_start_matches("mods\\");
+
+                                    // Try to parse project ID and version ID from the CDN URL
+                                    let (project_id, version_id) = parse_modrinth_url(&dl_url)
+                                        .unwrap_or((String::new(), String::new()));
+
+                                    if !project_id.is_empty() && !version_id.is_empty() {
+                                        // ── Fetch project metadata from Modrinth API ──
+                                        emit_progress(&app_handle, ModpackProgressEvent {
+                                            phase: "downloading_files".to_string(),
+                                            current: downloaded + skipped + errors,
+                                            total: total_files,
+                                            message: format!("Pobieranie informacji o {}", file_name),
+                                        });
+
+                                        let (mod_title, mod_slug, mod_icon_url) = fetch_project_metadata(&project_id)
+                                            .unwrap_or((
+                                                String::new(),
+                                                project_id.clone(),
+                                                String::new(),
+                                            ));
+
+                                        // Fetch version number
+                                        let version_number = fetch_version_number(&project_id, &version_id)
+                                            .unwrap_or_default();
+
+                                        // Use title as name if available, otherwise fall back to filename
+                                        let mod_name = if mod_title.is_empty() {
+                                            file_name
+                                                .trim_end_matches(".jar")
+                                                .trim_end_matches(".jar.disabled")
+                                                .to_string()
+                                        } else {
+                                            mod_title
+                                        };
+
+                                        let project_slug = if mod_slug.is_empty() { None } else { Some(mod_slug) };
+                                        let icon_url = if mod_icon_url.is_empty() { None } else { Some(mod_icon_url) };
+                                        let ver_id = Some(version_id.clone());
+                                        let ver_num = if version_number.is_empty() { None } else { Some(version_number) };
+
+                                        if let Err(e) = crate::mod_installer::register_mod_metadata_full(
+                                            &app_data_dir,
+                                            &input.name,
+                                            file_name,
+                                            &mod_name,
+                                            ver_id,
+                                            ver_num,
+                                            project_slug,
+                                            icon_url,
+                                        ) {
+                                            emit_progress(&app_handle, ModpackProgressEvent {
+                                                phase: "downloading_files".to_string(),
+                                                current: downloaded + skipped + errors,
+                                                total: total_files,
+                                                message: format!("Błąd zapisu metadanych: {}", e),
+                                            });
+                                        }
+                                    } else {
+                                        // Non-Modrinth URL — register with basic metadata
+                                        let _ = crate::mod_installer::register_mod_metadata(
+                                            &app_data_dir,
+                                            &input.name,
+                                            file_name,
+                                            None,
+                                            None,
+                                            None,
+                                        );
+                                    }
+                                }
                             }
                         }
                         Err(e) => {

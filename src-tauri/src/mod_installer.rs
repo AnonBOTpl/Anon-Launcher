@@ -210,6 +210,83 @@ pub fn install_mod(
     Ok(installed_mod)
 }
 
+/// Register a mod in the registry after it's been placed on disk.
+/// Used by the modpack installer which handles download itself.
+pub fn register_mod_metadata(
+    app_data_dir: &std::path::Path,
+    instance_name: &str,
+    file_name: &str,
+    version_id: Option<String>,
+    version_number: Option<String>,
+    project_slug: Option<String>,
+) -> Result<InstalledMod, String> {
+    let mods_dir = get_instance_mods_dir(app_data_dir, instance_name);
+    let mut registry = read_registry(&mods_dir);
+
+    // Remove existing entry with same file name
+    registry.mods.retain(|m| m.file_name != file_name);
+
+    let enabled = !file_name.ends_with(".disabled");
+
+    let installed_mod = InstalledMod {
+        name: derive_name_from_filename(file_name),
+        version_id: version_id.unwrap_or_default(),
+        version_number: version_number.unwrap_or_default(),
+        file_name: file_name.to_string(),
+        enabled,
+        installed_at: now_iso(),
+        project_slug,
+        icon_url: None,
+    };
+
+    registry.mods.push(installed_mod.clone());
+    write_registry(&mods_dir, &registry)?;
+
+    Ok(installed_mod)
+}
+
+/// Register a mod with full metadata (including name and icon_url).
+pub fn register_mod_metadata_full(
+    app_data_dir: &std::path::Path,
+    instance_name: &str,
+    file_name: &str,
+    mod_name: &str,
+    version_id: Option<String>,
+    version_number: Option<String>,
+    project_slug: Option<String>,
+    icon_url: Option<String>,
+) -> Result<InstalledMod, String> {
+    let mods_dir = get_instance_mods_dir(app_data_dir, instance_name);
+    let mut registry = read_registry(&mods_dir);
+
+    // Remove existing entry with same file name
+    registry.mods.retain(|m| m.file_name != file_name);
+
+    let enabled = !file_name.ends_with(".disabled");
+
+    let mod_name_final = if mod_name.is_empty() {
+        derive_name_from_filename(file_name)
+    } else {
+        mod_name.to_string()
+    };
+
+    let installed_mod = InstalledMod {
+        name: mod_name_final,
+        version_id: version_id.unwrap_or_default(),
+        version_number: version_number.unwrap_or_default(),
+        file_name: file_name.to_string(),
+        enabled,
+        installed_at: now_iso(),
+        project_slug,
+        icon_url,
+    };
+
+    registry.mods.push(installed_mod.clone());
+    write_registry(&mods_dir, &registry)?;
+
+    Ok(installed_mod)
+}
+
 /// List all installed mods for an instance (syncs with filesystem first).
 pub fn list_mods(
     app_data_dir: &std::path::Path,

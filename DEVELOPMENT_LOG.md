@@ -1028,3 +1028,39 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — Fix: UI freeze modpacka + ikony/wersje modów + cancel + blokada dismiss
+
+### 🔥 Fix: UI freeze podczas instalacji modpacka
+
+**Przyczyna:** `create_instance_from_modpack` był synchroniczną komendą Tauri.
+
+**Fix:**
+- `modpack_installer.rs` — `create_from_modpack_background()` spawniuje `std::thread::spawn` i emituje `modpack:done`/`modpack:error` eventy
+- `lib.rs` — komenda Tauri zwraca `Ok(())` natychmiast; dodano `modpack_cancel: Arc<AtomicBool>` do AppState
+- `CreateInstanceForm.tsx` — event-based flow: subskrybuje `modpack:progress`, `modpack:done`, `modpack:error` PRZED `invoke()`
+
+### Nowe: Ikony i wersje modów z modpacka
+
+- `modpack_installer.rs` — `fetch_project_metadata()` (GET /v2/project/{id}) i `fetch_version_number()` (GET /v2/project/{id}/version)
+- `mod_installer.rs` — `register_mod_metadata_full()` z parametrami `mod_name` i `icon_url`
+- Po pobraniu każdego moda z modpacka: API call do Modrinth → zapis pełnych metadanych (title, slug, icon_url, version_number)
+- Fallback dla modów spoza CDN Modrinth — podstawowe metadane bez ikony
+
+### Nowe: Cancel + blokada dismiss
+
+- Przycisk "Anuluj instalację" w dialogu progresu
+- `cancel_modpack_installation` Tauri command ustawia flagę `AtomicBool`
+- Backend sprawdza flagę między plikami; przy anulowaniu usuwa folder instancji + temp dir
+- Blokada dismiss dialogu podczas instalacji (`onOpenChange` z warunkiem, `showCloseButton={!modpackInstalling}`)
+
+### Zmodyfikowane pliki
+- `src-tauri/src/modpack_installer.rs` — background thread, API fetch, cancel
+- `src-tauri/src/mod_installer.rs` — `register_mod_metadata_full()`
+- `src-tauri/src/lib.rs` — `modpack_cancel` w AppState, `cancel_modpack_installation` komenda
+- `src/types/content.ts` — `ModpackDoneEvent`, `ModpackErrorEvent`
+- `src/components/CreateInstanceForm.tsx` — event-based flow, cancel, block dismiss
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)

@@ -1,14 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import type { CreateInstanceInput } from "@/types/instance";
-import type { CreateFromModpackResult } from "@/types/content";
+import type { ModpackProgressEvent } from "@/types/content";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import VersionSelect from "@/components/VersionSelect";
 import LoaderSelect from "@/components/LoaderSelect";
 import JavaSettings from "@/components/JavaSettings";
@@ -53,6 +61,15 @@ function CreateInstanceForm() {
 
   // Modpack state
   const [modpackSelection, setModpackSelection] = useState<ModpackSelection | null>(null);
+
+  // Modpack progress dialog
+  const [modpackProgress, setModpackProgress] = useState<ModpackProgressEvent | null>(null);
+  const [modpackInstalling, setModpackInstalling] = useState(false);
+  const [modpackError, setModpackError] = useState<string | null>(null);
+  const [modpackSuccess, setModpackSuccess] = useState(false);
+  const modpackUnlistenRef = useRef<(() => void)[]>([]);
+
+
 
   const {
     versions,
@@ -162,14 +179,58 @@ function CreateInstanceForm() {
 
         await invoke("create_instance", { input });
       } else {
-        // Modpack mode
+        // Modpack mode — show progress dialog (async via events)
         if (!modpackSelection) {
           setErrors({ general: "Wybierz paczkę modów" });
           setSubmitting(false);
           return;
         }
 
-        const result = await invoke<CreateFromModpackResult>("create_instance_from_modpack", {
+        // Clean up old listeners
+        modpackUnlistenRef.current.forEach((fn) => fn());
+        modpackUnlistenRef.current = [];
+
+        // Reset progress state
+        setModpackProgress(null);
+        setModpackError(null);
+        setModpackSuccess(false);
+        setModpackInstalling(true);
+
+        // Subscribe to progress events
+        const unlistenProgress = await listen<ModpackProgressEvent>(
+          "modpack:progress",
+          (event) => {
+            setModpackProgress(event.payload);
+          },
+        );
+        modpackUnlistenRef.current.push(unlistenProgress);
+
+        // Subscribe to done event
+        const unlistenDone = await listen<{ instanceName: string }>(
+          "modpack:done",
+          () => {
+            setModpackSuccess(true);
+            // Auto-navigate after success
+            setTimeout(() => {
+              setModpackInstalling(false);
+              navigate("/");
+            }, 1500);
+          },
+        );
+        modpackUnlistenRef.current.push(unlistenDone);
+
+        // Subscribe to error event
+        const unlistenError = await listen<{ message: string }>(
+          "modpack:error",
+          (event) => {
+            setModpackError(event.payload.message);
+            setModpackInstalling(false);
+          },
+        );
+        modpackUnlistenRef.current.push(unlistenError);
+
+        // Start the background installation (returns immediately)
+        await invoke("create_instance_from_modpack", {
           input: {
             name: name.trim(),
             modpackUrl: modpackSelection.modpackUrl,
@@ -182,12 +243,10 @@ function CreateInstanceForm() {
           },
         });
 
-        if (!result.success) {
-          throw new Error("Nie udało się utworzyć instancji z modpacka");
-        }
+        return; // Don't navigate — events handle it
       }
 
-      // Navigate back to dashboard on success
+      // Navigate back to dashboard on success (manual mode)
       navigate("/");
     } catch (err) {
       const message =
@@ -424,6 +483,121 @@ function CreateInstanceForm() {
           )}
         </Button>
       </div>
+
+      {/* ── Modpack installation progress dialog ──────────────────── */}
+      <Dialog
+        open={modpackInstalling || modpackSuccess || !!modpackError}
+        onOpenChange={(open) => {
+          // Allow closing only when not installing (success or error)
+          if (!modpackInstalling && !open) {
+            setModpackInstalling(false);
+            setModpackProgress(null);
+            setModpackError(null);
+            setModpackSuccess(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={!modpackInstalling}>
+          <DialogHeader>
+            <DialogTitle>
+              {modpackError
+                ? "Błąd instalacji"
+                : modpackSuccess
+                  ? "Instalacja zakończona"
+                  : "Instalowanie modpacka"}
+            </DialogTitle>
+            <DialogDescription>
+              {modpackError
+                ? "Nie udało się utworzyć instancji z modpacka."
+                : modpackSuccess
+                  ? "Instancja została pomyślnie utworzona!"
+                  : `Tworzenie instancji z modpacka...`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            {modpackError && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                <div className="flex items-start gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{modpackError}</span>
+                </div>
+              </div>
+            )}
+
+            {modpackSuccess && (
+              <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  Instancja gotowa — za chwilę nastąpi przekierowanie...
+                </div>
+              </div>
+            )}
+
+            {modpackInstalling && (
+              <div className="space-y-3 py-2">
+                {/* Progress bar */}
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300 ease-out",
+                      modpackProgress?.phase === "downloading_modpack" || modpackProgress?.phase === "parsing"
+                        ? "bg-purple-400 animate-pulse"
+                        : "bg-gradient-to-r from-purple-600 to-purple-400",
+                    )}
+                    style={{
+                      width: modpackProgress?.total && modpackProgress.total > 0
+                        ? `${Math.round((Math.min(modpackProgress.current, modpackProgress.total) / modpackProgress.total) * 100)}%`
+                        : "100%",
+                    }}
+                  />
+                </div>
+
+                {/* Status text */}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+                    <div className="h-4 w-4 animate-spin shrink-0 rounded-full border-2 border-muted border-t-purple-500" />
+                    <span className="truncate max-w-[280px]">
+                      {modpackProgress?.message ?? "Przygotowywanie..."}
+                    </span>
+                  </div>
+                  {modpackProgress?.phase === "downloading_files" && modpackProgress.total > 0 && (
+                    <span className="text-muted-foreground tabular-nums shrink-0 ml-2">
+                      {modpackProgress.current}/{modpackProgress.total}
+                    </span>
+                  )}
+                </div>
+
+                {/* Cancel button */}
+                <div className="flex justify-center pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await invoke("cancel_modpack_installation");
+                      } catch {
+                        // Ignore errors
+                      }
+                    }}
+                    className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                    </svg>
+                    Anuluj instalację
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

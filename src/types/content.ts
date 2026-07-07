@@ -8,9 +8,19 @@ export interface InstalledContent {
 
 /** Progress event from modpack installation */
 export interface ModpackProgressEvent {
-  phase: "downloading_modpack" | "parsing" | "downloading_files" | "copying_overrides" | "done";
+  phase: "downloading_modpack" | "parsing" | "downloading_files" | "resolving_metadata" | "copying_overrides" | "done";
   current: number;
   total: number;
+  message: string;
+}
+
+/** Event emitted when modpack installation completes successfully */
+export interface ModpackDoneEvent {
+  instanceName: string;
+}
+
+/** Event emitted when modpack installation fails or is cancelled */
+export interface ModpackErrorEvent {
   message: string;
 }
 
