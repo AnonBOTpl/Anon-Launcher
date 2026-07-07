@@ -742,57 +742,8 @@ Usunięto cały kod związany z trybem developerskim:
 - `src/lib/stronghold.ts` — wyczyszczono komentarz
 - `.env.example` — uproszczono
 
-### 🧠 Wnioski
-
-**Problem z loadClient:** Stronghold Tauri plugin auto-ładuje klienta przy inicjalizacji,
-ale nie udostępnia referencji do już załadowanego klienta. Drugie `loadClient()` zawsze
-rzuca błędem. Rozwiązaniem jest cache'owanie klienta po pierwszym `loadClient`/`createClient`.
-
-**Mapa sesji w localStorage:** Mimo że Stronghold jest teraz naprawiony, mapa per-UUID
-w localStorage jest wartościowym fallbackiem — pozwala na błyskawiczne przełączanie kont
-bez czekania na refresh token z Microsoft. Tokeny access są i tak przechowywane w
-localStorage (`anon_active_session`), więc mapa nie wprowadza nowych zagrożeń.
-
-**Logi z testu (przełączanie AnonBOT ↔ AnonBOT2):**
-```
-[tryRefreshSession] Session still valid, using cached          // pierwsze odpalenie
-[tryRefreshSession] Session still valid, using cached          // drugie konto
-[tryRefreshSession] Cached session belongs to different account, refreshing...
-[tryRefreshSession] Found valid session in map for d94c...    // switch → mapa
-[tryRefreshSession] Cached session belongs to different account, refreshing...
-[tryRefreshSession] Found valid session in map for 3e16...    // switch z powrotem → mapa
-```
-Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
-
 ### Build
 - `tsc --noEmit` ✅
-
-### Status projektu
-
-#### ✅ Ukończone
-- [x] **TASK-01** — Inicjalizacja projektu Tauri + React + TypeScript
-- [x] **TASK-02** — Konfiguracja shadcn/ui
-- [x] **TASK-03** — System manifestów instancji (ze schemaVersion)
-- [x] **TASK-04** — Dashboard z Sidebarem
-- [x] **TASK-05** — Tworzenie instancji
-- [x] **TASK-06** — Klonowanie instancji
-- [x] **TASK-07** — Eksport i import ZIP
-- [x] **TASK-08** — Otwieranie folderu instancji
-- [x] **TASK-09** — Microsoft Device Code Flow (kod gotowy, czeka na Azure)
-- [x] **TASK-10** — Stronghold + zarządzanie kontami
-- [x] **TASK-11** — Moduł pobierania Java (Adoptium)
-- [x] **TASK-12** — Minecraft Core (wersje, biblioteki, launch)
-- [x] **TASK-13** — Uruchamianie Vanilla + Process Manager
-- [x] **TASK-14** — Fabric loader
-- [x] **TASK-30** — Usuwanie instancji
-- [x] **TASK-31** — Edycja ustawień instancji
-- [x] **TASK-32** — Widok instancji (layout z zakładkami)
-- [x] **TASK-DEV-AUTH** — Mock auth (usunięty, kod produkcyjny)
-
-#### 🔄 W trakcie / Częściowo
-- [~] **TASK-26** — Logi w czasie rzeczywistym (60%)
-- [~] **TASK-28a** — Redesign UI (80%)
-- [~] **TASK-28b** — Motywy, animacje (70%)
 
 ## 2026-07-06 — TASK-19 + TASK-20: Modrinth (wyszukiwarka + instalacja modów)
 
@@ -962,122 +913,56 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 ### Build
 - `tsc --noEmit` ✅
 
-### Status projektu
+## 2026-07-07 — Minecraft 26.x compatibility + catch_unwind + Java 25
 
-#### ✅ Ukończone
-- [x] **TASK-01** — Inicjalizacja projektu Tauri + React + TypeScript
-- [x] **TASK-02** — Konfiguracja shadcn/ui
-- [x] **TASK-03** — System manifestów instancji (ze schemaVersion)
-- [x] **TASK-04** — Dashboard z Sidebarem
-- [x] **TASK-05** — Tworzenie instancji
-- [x] **TASK-06** — Klonowanie instancji
-- [x] **TASK-07** — Eksport i import ZIP
-- [x] **TASK-08** — Otwieranie folderu instancji
-- [x] **TASK-09** — Microsoft Device Code Flow (kod gotowy, czeka na Azure)
-- [x] **TASK-10** — Stronghold + zarządzanie kontami
-- [x] **TASK-11** — Moduł pobierania Java (Adoptium)
-- [x] **TASK-12** — Minecraft Core (wersje, biblioteki, launch)
-- [x] **TASK-13** — Uruchamianie Vanilla + Process Manager
-- [x] **TASK-14** — Fabric loader
-- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
-- [x] **TASK-20** — Instalacja modów
-- [x] **TASK-30** — Usuwanie instancji
-- [x] **TASK-31** — Edycja ustawień instancji
-- [x] **TASK-32** — Widok instancji (layout z zakładkami)
-- [x] **TASK-DEV-AUTH** — Mock auth (usunięty, kod produkcyjny)
-
-#### 🔄 W trakcie / Częściowo
-- [~] **TASK-26** — Logi w czasie rzeczywistym (60%)
-- [~] **TASK-28a** — Redesign UI (80%)
-- [~] **TASK-28b** — Motywy, animacje (70%)
-
-#### ❌ Do zrobienia
-- [ ] **TASK-15** — Tryb offline (cached session)
-- [ ] **TASK-16** — Kolejka pobrań (Download Manager)
-- [ ] **TASK-17** — Monitorowanie postępu
-- [ ] **TASK-18** — Pobieranie assetów i bibliotek
-- [x] **TASK-21** — Aktualizacja modów
-- [x] **TASK-22** — Wykrywanie zależności
-- [ ] **TASK-23** — Snapshoty
-- [ ] **TASK-24** — Przywracanie snapshotów
-- [ ] **TASK-25** — Obsługa crash-reportów
-- [ ] **TASK-27** — Avatar 2D w zakładce Profil
-- [ ] **TASK-28c** — Toasty i notyfikacje
-- [ ] **TASK-29** — Testy końcowe
-
-## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
-
-### 🔥 Fix: 1.12.2 crash (text2speech) i 1.16.5 crash (LWJGL) — biblioteki z `natives` traciły main JAR z classpath
+### 🔥 Problem: Minecraft 26.x (26.1, 26.2) nie działa
 
 #### Przyczyna
-W manifeście wersji Minecrafta biblioteki z polem `natives` występują DWUKROTNIE:
-- Wpis 1: `downloads.artifact` (główny JAR, potrzebny na classpath)
-- Wpis 2: `downloads.artifact` + `natives` (ten sam JAR + wersja z natywnymi DLL)
+Minecraft zmienił system wersjonowania z `1.21.x` → `26.x` (bez `1.` prefixu).
 
-`resolveLibrary()` sprawdza `lib.natives` PIERWSZY → zwraca wersję native (`isNative: true`).
-Dedup (`getDedupKey`) nadpisuje wpis 1 wpisem 2 → main JAR znika z classpath → `NoClassDefFoundError`.
+**Główne problemy:**
+1. **Java version mismatch** — `getJavaVersionForMc("26.2")` zwracało `"21"`, ale 26.x wymaga Javy 25. Klasy Minecrafta są kompilowane dla Javy 25 → `UnsupportedClassVersionError`
+2. **Background thread panics** — `std::thread::spawn` bez `catch_unwind` → jeśli reqwest panikował (np. TLS error, timeout), wątek umierał po cichu bez emisji eventu → frontend wisiał w "Pobieranie..." BEZ możliwości wyjścia
+3. **Nowe `logging` pole** — wersja JSON 26.x ma nowy obiekt `logging` z konfiguracją log4j2 (URL do pliku XML + szablon argumentu JVM `-Dlog4j.configurationFile=${path}`). Nasze typy i resolver nie obsługiwały tego pola
+4. **`assets` pole zmienione na string** — w 26.x pole `assets` to string `"32"` (wcześniej absent). Nie wpływa na działanie bo używamy `assetIndex` (object), ale typy były niekompletne
 
-#### Fix (`src/lib/version-resolver.ts`)
-Gdy biblioteka ma BOTH `artifact` + `natives`, dodajemy artifact osobno jako `isNative: false`
-z unikalnym kluczem dedup (`:artifact`). Main JAR pozostaje na classpath.
+#### Co zostało naprawione
 
-**Dotyczy wersji:** 1.8.9 (1 lib), 1.12.2 (3 libs), 1.16.5 (16 libs!), 1.18.2 (16 libs).
-**Nie dotyczy:** 1.20.4+ (nie używają już pola `natives`).
+**`src/lib/java.ts`** — Java version mapping:
+- Dodano Java 25 (`"25"`) do `JAVA_REQUIREMENTS` ("Minecraft 26.x+")
+- `getJavaVersionForMc()`: `major >= 26` → zwraca `"25"` (obsługuje 26, 26.0, 26.0.1, 27.0 itd.)
 
-#### Wymaga przebudowania apki (`tauri dev` lub `build`) — zmiana w TypeScript.
+**`src/types/minecraft.ts`** — typy dla nowego formatu:
+- `MinecraftLoggingConfig` — interfejs dla obiektu `logging` w version JSON
+- `ResolvedLoggingConfig` — rozpoznana konfiguracja logowania (URL pliku, ścieżka, SHA1, argument)
+- `assets?: string` — nowe pole string w `MinecraftVersionJson`
+- `logging?: ResolvedLoggingConfig` — w `ResolvedVersion`
 
-### 🔥 Fix: UI freeze podczas pobierania assetów/bibliotek/Javy
+**`src/lib/version-resolver.ts`** — obsługa `logging`:
+- Po resolucji bibliotek, parsuje `versionJson.logging?.client?.file` i tworzy `ResolvedLoggingConfig`
+- Dołącza do zwracanego `ResolvedVersion`
 
-#### Przyczyna
-Wszystkie downloady używały `reqwest::blocking::get()` bezpośrednio w komendach Tauri → blokowały główne okno.
+**`src/lib/minecraft-core.ts`** — JVM arg dla logowania:
+- W `generateLaunchArgs`: jeśli `version.logging` istnieje, zamienia `${path}` na ścieżkę `assets/log_configs/{fileId}`
+- Dodaje argument do JVM args
 
-#### Fix (wzorem `zip_export.rs`)
-**Rust:**
-- `minecraft_core.rs` — 4 funkcje background (`*_background`) spawniące `std::thread::spawn`, emitujące `download:complete`/`download:error` Tauri events
-- `java_manager.rs` — `download_java_background()` z eventami `java:download-complete`/`java:download-error`
-- `lib.rs` — wszystkie 5 komend Tauri zwracają `Ok(())` natychmiast (background thread robi resztę)
+**`src-tauri/src/minecraft_core.rs`** — background thread safety:
+- Wszystkie 4 funkcje background wrapper (`download_libraries_background`, `download_assets_background`, `download_client_jar_background`, `extract_natives_background`) owinięte w `std::panic::catch_unwind`
+- Jeśli wątek panikuje (reqwest TLS error, assertion failure itp.), emituje `download:error` z komunikatem zamiast cichej śmierci
 
-**Frontend:**
-- `InstanceView.tsx` — `waitForDownload(phase)` Promise-based helper, listenery PRZED `invoke()` (🔒 brak race condition)
-- `java.ts` — `downloadJava()` event-based, zachowuje `Promise<DownloadStatus>` (kompatybilne z `useJavaRuntime.ts`)
+#### Zmodyfikowane pliki
+- `src/lib/java.ts` — Java 25 + fix getJavaVersionForMc
+- `src/types/minecraft.ts` — MinecraftLoggingConfig, ResolvedLoggingConfig, assets: string, logging
+- `src/lib/version-resolver.ts` — obsługa logging config
+- `src/lib/minecraft-core.ts` — JVM arg z logging config path
+- `src-tauri/src/minecraft_core.rs` — catch_unwind we wszystkich background wrapperach
 
-### Fix: Snapshot — pusta lista modów
-`read_mods_registry` szukał `mods.json` w root instancji zamiast w `mods/mods.json`. Naprawiono.
-
-### Zmodyfikowane pliki
-- `src/lib/version-resolver.ts` — fix text2speech/LWJGL classpath
-- `src-tauri/src/minecraft_core.rs` — background wrappers dla downloadów
-- `src-tauri/src/java_manager.rs` — `download_java_background`
-- `src-tauri/src/lib.rs` — komendy Tauri zwracają natychmiast
-- `src/pages/InstanceView.tsx` — event-based download flow
-- `src/lib/java.ts` — event-based `downloadJava`
-- `src-tauri/src/snapshot.rs` — fix ścieżki `mods.json`
-
-### Status: DO TESTÓW
-Zmiany nie były testowane — wymagają przebudowania apki i ręcznej weryfikacji:
-1. UI nie zamraża się przy pobieraniu
-2. 1.12.2 działa bez crasha text2speech
-3. 1.16.5 działa bez crasha LWJGL
-4. Snapshot pokazuje listę modów
+#### Status: DO TESTÓW
+Wymaga przebudowania apki (`npm run tauri build` lub `tauri dev`):
+1. Instancja 26.1/26.2 uruchamia się (potrzebuje Javy 25 — pobierz przez Java Settings)
+2. UI nie wisi przy błędach sieciowych (catch_unwind emituje error zamiast cichej paniki)
+3. Logging config nie powoduje błędów log4j
 
 ### Build
-- `tsc --noEmit` ✅ (0 błędów)
-- `cargo check` ✅ (0 błędów)
-
-## 2026-07-07 — TASK-23 + TASK-24: Snapshot system
-
-### Nowe pliki
-- `src-tauri/src/snapshot.rs` — create/list/delete/restore snapshotów (full + metadata mode)
-- `src/lib/snapshot.ts` — API wrappery
-- `src/hooks/useSnapshots.ts` — React hook
-- `src/components/SnapshotList.tsx` — lista snapshotów z datą/rozmiarem/liczbą modów
-- `src/components/RestoreSnapshotDialog.tsx` — dialog potwierdzenia przywrócenia
-
-### Zmodyfikowane
-- `src-tauri/src/lib.rs` — 4 komendy snapshot zarejestrowane
-- `src/components/InstanceTabs.tsx` — nowa zakładka Snapshoty
-- `src/components/ModList.tsx` — dialog snapshotu przed aktualizacją modów
-
-### Build
-- `tsc --noEmit` ✅
-- `cargo check` ✅
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)

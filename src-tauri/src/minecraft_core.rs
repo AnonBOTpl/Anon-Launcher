@@ -451,23 +451,33 @@ impl MinecraftCore {
     // ── Background (non-blocking) wrappers ──────────────────────────
 
     /// Download libraries in background thread, emitting events.
+    /// Uses catch_unwind to ensure panics don't hang the frontend.
     pub fn download_libraries_background(
         app_handle: AppHandle,
         app_data_dir: PathBuf,
         libraries: Vec<LibraryToDownload>,
     ) {
         std::thread::spawn(move || {
-            let core = MinecraftCore::new(&app_data_dir);
-            match core.download_libraries(&app_handle, libraries) {
-                Ok(_paths) => {
-                    let _ = app_handle.emit("download:complete", json!({
-                        "phase": "libraries"
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let core = MinecraftCore::new(&app_data_dir);
+                core.download_libraries(&app_handle, libraries)
+            }));
+            match result {
+                Ok(Ok(_)) => {
+                    let _ = app_handle.emit("download:complete", json!({ "phase": "libraries" }));
+                }
+                Ok(Err(e)) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "libraries", "message": e
                     }));
                 }
-                Err(e) => {
+                Err(panic) => {
+                    let msg = panic.downcast_ref::<&str>().map(|s| s.to_string())
+                        .or_else(|| panic.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "Unknown panic in background thread".to_string());
                     let _ = app_handle.emit("download:error", json!({
                         "phase": "libraries",
-                        "message": e
+                        "message": format!("Internal error (background thread panicked): {}", msg)
                     }));
                 }
             }
@@ -475,23 +485,33 @@ impl MinecraftCore {
     }
 
     /// Download assets in background thread, emitting events.
+    /// Uses catch_unwind to ensure panics don't hang the frontend.
     pub fn download_assets_background(
         app_handle: AppHandle,
         app_data_dir: PathBuf,
         index: AssetIndexToDownload,
     ) {
         std::thread::spawn(move || {
-            let core = MinecraftCore::new(&app_data_dir);
-            match core.download_assets(&app_handle, &index) {
-                Ok(_count) => {
-                    let _ = app_handle.emit("download:complete", json!({
-                        "phase": "assets"
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let core = MinecraftCore::new(&app_data_dir);
+                core.download_assets(&app_handle, &index)
+            }));
+            match result {
+                Ok(Ok(_)) => {
+                    let _ = app_handle.emit("download:complete", json!({ "phase": "assets" }));
+                }
+                Ok(Err(e)) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "assets", "message": e
                     }));
                 }
-                Err(e) => {
+                Err(panic) => {
+                    let msg = panic.downcast_ref::<&str>().map(|s| s.to_string())
+                        .or_else(|| panic.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "Unknown panic in background thread".to_string());
                     let _ = app_handle.emit("download:error", json!({
                         "phase": "assets",
-                        "message": e
+                        "message": format!("Internal error (background thread panicked): {}", msg)
                     }));
                 }
             }
@@ -499,6 +519,7 @@ impl MinecraftCore {
     }
 
     /// Download client jar in background thread, emitting events.
+    /// Uses catch_unwind to ensure panics don't hang the frontend.
     pub fn download_client_jar_background(
         app_handle: AppHandle,
         app_data_dir: PathBuf,
@@ -507,17 +528,26 @@ impl MinecraftCore {
         expected_size: u64,
     ) {
         std::thread::spawn(move || {
-            let core = MinecraftCore::new(&app_data_dir);
-            match core.download_client_jar(&app_handle, &mc_version, &url, expected_size) {
-                Ok(_path) => {
-                    let _ = app_handle.emit("download:complete", json!({
-                        "phase": "client"
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let core = MinecraftCore::new(&app_data_dir);
+                core.download_client_jar(&app_handle, &mc_version, &url, expected_size)
+            }));
+            match result {
+                Ok(Ok(_)) => {
+                    let _ = app_handle.emit("download:complete", json!({ "phase": "client" }));
+                }
+                Ok(Err(e)) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "client", "message": e
                     }));
                 }
-                Err(e) => {
+                Err(panic) => {
+                    let msg = panic.downcast_ref::<&str>().map(|s| s.to_string())
+                        .or_else(|| panic.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "Unknown panic in background thread".to_string());
                     let _ = app_handle.emit("download:error", json!({
                         "phase": "client",
-                        "message": e
+                        "message": format!("Internal error (background thread panicked): {}", msg)
                     }));
                 }
             }
@@ -525,6 +555,7 @@ impl MinecraftCore {
     }
 
     /// Extract natives in background thread, emitting events.
+    /// Uses catch_unwind to ensure panics don't hang the frontend.
     pub fn extract_natives_background(
         app_handle: AppHandle,
         app_data_dir: PathBuf,
@@ -532,17 +563,26 @@ impl MinecraftCore {
         game_dir: String,
     ) {
         std::thread::spawn(move || {
-            let core = MinecraftCore::new(&app_data_dir);
-            match core.extract_natives(&app_handle, natives, &game_dir) {
-                Ok(_paths) => {
-                    let _ = app_handle.emit("download:complete", json!({
-                        "phase": "natives"
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let core = MinecraftCore::new(&app_data_dir);
+                core.extract_natives(&app_handle, natives, &game_dir)
+            }));
+            match result {
+                Ok(Ok(_)) => {
+                    let _ = app_handle.emit("download:complete", json!({ "phase": "natives" }));
+                }
+                Ok(Err(e)) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "natives", "message": e
                     }));
                 }
-                Err(e) => {
+                Err(panic) => {
+                    let msg = panic.downcast_ref::<&str>().map(|s| s.to_string())
+                        .or_else(|| panic.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "Unknown panic in background thread".to_string());
                     let _ = app_handle.emit("download:error", json!({
                         "phase": "natives",
-                        "message": e
+                        "message": format!("Internal error (background thread panicked): {}", msg)
                     }));
                 }
             }

@@ -57,6 +57,20 @@ export interface MinecraftAssetIndex {
   url: string;
 }
 
+/** Logging configuration (new in Minecraft 26.x) */
+export interface MinecraftLoggingConfig {
+  client: {
+    argument: string;
+    file: {
+      id: string;
+      sha1: string;
+      size: number;
+      url: string;
+    };
+    type: string;
+  };
+}
+
 /** Game/downloads section of version JSON */
 export interface MinecraftDownloads {
   client: MinecraftDownloadArtifact;
@@ -76,7 +90,11 @@ export interface MinecraftVersionJson {
     jvm: Array<string | MinecraftArgumentRules>;
   };
   libraries: MinecraftLibrary[];
+  /** Legacy asset version string (e.g. "32"). Now just a string in 26.x+ */
+  assets?: string;
   assetIndex: MinecraftAssetIndex;
+  /** Logging config (new in 26.x). Provides log4j2 config file URL and JVM arg template. */
+  logging?: MinecraftLoggingConfig;
   downloads: MinecraftDownloads;
   releaseTime: string;
   minimumLauncherVersion?: number;
@@ -138,6 +156,18 @@ export interface FabricVersionMeta {
   libraries: MinecraftLibrary[];
 }
 
+/** Logging config resolved for launching (file path + JVM argument) */
+export interface ResolvedLoggingConfig {
+  /** Path to the downloaded logging config file */
+  filePath: string;
+  /** Download URL for the logging config file */
+  fileUrl: string;
+  /** SHA1 hash for verification */
+  sha1: string;
+  /** JVM argument template (e.g. "-Dlog4j.configurationFile=${path}") */
+  argument: string;
+}
+
 /** Resolved version ready for launching */
 export interface ResolvedVersion {
   /** Full version ID */
@@ -158,6 +188,8 @@ export interface ResolvedVersion {
   clientJar: MinecraftDownloadArtifact;
   /** Asset index reference */
   assetIndex: MinecraftAssetIndex;
+  /** Logging config (new in 26.x). Undefined if not present. */
+  logging?: ResolvedLoggingConfig;
   /** Release time */
   releaseTime: string;
 }

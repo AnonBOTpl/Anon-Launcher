@@ -29,7 +29,8 @@ export interface JavaRequirement {
 }
 
 export const JAVA_REQUIREMENTS: JavaRequirement[] = [
-  { version: "21", label: "Java 21", description: "Minecraft 1.20.5+" },
+  { version: "25", label: "Java 25", description: "Minecraft 26.x+" },
+  { version: "21", label: "Java 21", description: "Minecraft 1.20.5+ / 26.x fallback" },
   { version: "17", label: "Java 17", description: "Minecraft 1.17 – 1.20.4" },
   { version: "16", label: "Java 16", description: "Minecraft 1.17 snapshots" },
   { version: "11", label: "Java 11", description: "Minecraft 1.13 – 1.16" },
@@ -39,7 +40,11 @@ export const JAVA_REQUIREMENTS: JavaRequirement[] = [
 /**
  * Determine required Java version for a given Minecraft version.
  *
+ * Minecraft zmienił system wersjonowania z 1.x na x (26.x, 27.x, itd.).
+ * Nowe wersje (26.x+) wymagają Javy 25.
+ *
  * Rules:
+ * - 26.x+ (or 26.0+) → Java 25
  * - 1.20.5+ → Java 21
  * - 1.17 – 1.20.4 → Java 17
  * - 1.13 – 1.16 → Java 11
@@ -51,8 +56,14 @@ export function getJavaVersionForMc(mcVersion: string): string {
   const minor = parts[1] ?? 0;
   const patch = parts[2] ?? 0;
 
+  // Minecraft zmienił wersjonowanie: z 1.21.x → 26.x (bez "1." prefixu)
+  // 26.x+ oznacza całkowicie nową erę wersji Minecrafta
+  if (major >= 26) {
+    return "25";
+  }
+
   // 1.20.5+ → Java 21
-  if (major > 1 || (major === 1 && minor > 20) || (major === 1 && minor === 20 && patch >= 5)) {
+  if ((major === 1 && minor > 20) || (major === 1 && minor === 20 && patch >= 5)) {
     return "21";
   }
   // 1.17 – 1.20.4 → Java 17

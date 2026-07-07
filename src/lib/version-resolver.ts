@@ -7,6 +7,7 @@ import type {
   ResolvedVersion,
   MinecraftArgumentRules,
   FabricVersionMeta,
+  ResolvedLoggingConfig,
 } from "@/types/minecraft";
 
 const VERSION_MANIFEST_URL =
@@ -384,6 +385,19 @@ export async function resolveVersion(
     if (resolved) resolvedJvmArgs.push(resolved);
   }
 
+  // ── Resolve logging config (new in Minecraft 26.x) ───────────────
+  // The logging config provides a log4j2 XML file URL and a JVM argument template.
+  // The official launcher downloads this file and replaces ${path} with the actual path.
+  let resolvedLogging: ResolvedLoggingConfig | undefined;
+  if (versionJson.logging?.client?.file?.url) {
+    resolvedLogging = {
+      fileUrl: versionJson.logging.client.file.url,
+      filePath: `logging/${versionJson.logging.client.file.id}`,
+      sha1: versionJson.logging.client.file.sha1,
+      argument: versionJson.logging.client.argument,
+    };
+  }
+
   return {
     id: versionJson.id,
     mainClass,
@@ -399,6 +413,7 @@ export async function resolveVersion(
       size: clientJar?.size || 0,
     },
     assetIndex,
+    logging: resolvedLogging,
     releaseTime: versionJson.releaseTime,
   };
 }

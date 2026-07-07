@@ -157,6 +157,14 @@ export function generateLaunchArgs(
   // Minecraft 1.12.2 and earlier don't include this in their JVM args
   finalJvmArgs.push(`-Djava.library.path=${dirs.natives}`);
 
+  // Logging config JVM arg (Minecraft 26.x+)
+  if (version.logging) {
+    // Replace ${path} with the actual file path
+    const loggingPath = `${dirs.assets}/log_configs/${version.logging.filePath}`;
+    const loggingArg = version.logging.argument.split("${" + "path}").join(loggingPath);
+    finalJvmArgs.push(loggingArg);
+  }
+
   // Custom JVM args
   if (jvmArgs) {
     const custom = jvmArgs
