@@ -11,7 +11,6 @@ pub struct AccountMeta {
     pub uuid: String,
     pub username: String,
     pub last_used: String,
-    pub offline: bool,
 }
 
 /// Full session data (including access token) for launching Minecraft.
@@ -84,7 +83,6 @@ impl AccountManager {
         &self,
         uuid: &str,
         username: &str,
-        offline: bool,
     ) -> Result<(), String> {
         let mut store = self.load_store()?;
 
@@ -92,7 +90,6 @@ impl AccountManager {
             uuid: uuid.to_string(),
             username: username.to_string(),
             last_used: now_unix_string(),
-            offline,
         };
 
         store.accounts.insert(uuid.to_string(), meta);

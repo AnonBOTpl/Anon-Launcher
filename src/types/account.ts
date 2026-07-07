@@ -3,7 +3,6 @@ export interface AccountMeta {
   uuid: string;
   username: string;
   last_used: string;
-  offline: boolean;
 }
 
 /** Full account data used for saving */
@@ -14,7 +13,6 @@ export interface AccountData {
   refreshToken: string;
   expiresAt: string;
   lastUsed: string;
-  offline: boolean;
 }
 
 /** Minimal info needed to display in the switcher */
@@ -22,6 +20,5 @@ export interface AccountDisplay {
   uuid: string;
   username: string;
   lastUsed: string;
-  offline: boolean;
   isActive: boolean;
 }

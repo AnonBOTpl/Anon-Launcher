@@ -33,6 +33,7 @@ const JAVA_LABELS: Record<string, string> = {
   "11": "Java 11",
   "17": "Java 17",
   "21": "Java 21",
+  "25": "Java 25",
 };
 
 function EditInstanceDialog({
@@ -275,6 +276,7 @@ function EditInstanceDialog({
                 <option value="11">Java 11</option>
                 <option value="17">Java 17</option>
                 <option value="21">Java 21</option>
+                <option value="25">Java 25</option>
               </select>
 
               {/* Java/MC version mismatch warning */}

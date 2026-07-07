@@ -191,18 +191,9 @@
   - `src/components/SettingsDialog.tsx` — pole na własny Client ID z instrukcją
   - `src/components/Sidebar.tsx` — przyciski logowania + settings (⚙️)
 
-### Bloker — Minecraft API
+### Microsoft Auth — ZATWIERDZONA ✅
 
-Minecraft API blokuje Client ID (`316a868f-d3ad-4d0f-be3f-4692d5975c34`):
-```
-403 Forbidden: "Invalid app registration"
-```
-
-**Wykonane kroki:**
-1. Zarejestrowano aplikację przez Azure CLI (`az ad app create`)
-2. Skonfigurowano: `isFallbackPublicClient: true`, `signInAudience: AzureADandPersonalMicrosoftAccount`
-3. Zweryfikowano przez Azure CLI — konfiguracja jest poprawna
-4. Wysłano formularz: https://aka.ms/mce-reviewappid
+Aplikacja Microsoft Azure została zatwierdzona przez Microsoft.
 
 **Dane aplikacji:**
 | Pole | Wartość |
@@ -211,7 +202,7 @@ Minecraft API blokuje Client ID (`316a868f-d3ad-4d0f-be3f-4692d5975c34`):
 | Object ID | `20caf7b8-9abf-486f-b266-9ef83f725eb5` |
 | Tenant ID | `a879ebea-0590-43aa-ac8b-8f6debe427b0` |
 | Konto | `wermich2018@gmail.com` |
-| Status | Czeka na zatwierdzenie Microsoft |
+| Status | ✅ Zatwierdzona |
 
 ### Nowe pliki
 - `src/hooks/useSettings.ts` — localStorage dla Client ID
@@ -921,47 +912,42 @@ Usunięto cały kod związany z trybem developerskim:
 Minecraft zmienił system wersjonowania z `1.21.x` → `26.x` (bez `1.` prefixu).
 
 **Główne problemy:**
-1. **Java version mismatch** — `getJavaVersionForMc("26.2")` zwracało `"21"`, ale 26.x wymaga Javy 25. Klasy Minecrafta są kompilowane dla Javy 25 → `UnsupportedClassVersionError`
-2. **Background thread panics** — `std::thread::spawn` bez `catch_unwind` → jeśli reqwest panikował (np. TLS error, timeout), wątek umierał po cichu bez emisji eventu → frontend wisiał w "Pobieranie..." BEZ możliwości wyjścia
-3. **Nowe `logging` pole** — wersja JSON 26.x ma nowy obiekt `logging` z konfiguracją log4j2 (URL do pliku XML + szablon argumentu JVM `-Dlog4j.configurationFile=${path}`). Nasze typy i resolver nie obsługiwały tego pola
-4. **`assets` pole zmienione na string** — w 26.x pole `assets` to string `"32"` (wcześniej absent). Nie wpływa na działanie bo używamy `assetIndex` (object), ale typy były niekompletne
+1. **Java version mismatch** — `getJavaVersionForMc("26.2")` zwracało `"21"`, ale 26.x wymaga Javy 25 → `UnsupportedClassVersionError`
+2. **Background thread panics** — `std::thread::spawn` bez `catch_unwind` → cicha śmierć wątku, frontend wisiał
+3. **Nowe `logging` pole** — brak obsługi log4j2 config w version JSON 26.x
+4. **`assets` pole zmienione na string** — typy były niekompletne
 
 #### Co zostało naprawione
+- `src/lib/java.ts` — Java 25 + `major >= 26` → `"25"`
+- `src/types/minecraft.ts` — `MinecraftLoggingConfig`, `ResolvedLoggingConfig`, `assets?: string`
+- `src/lib/version-resolver.ts` — parsing logging config
+- `src/lib/minecraft-core.ts` — JVM arg dla log4j2 config (tymczasowo wyłączone — brak pliku)
+- `src-tauri/src/minecraft_core.rs` — `catch_unwind` we wszystkich background wrapperach
+- `src/components/JavaSettings.tsx` — Java 25 w dropdownie
+- `src/components/EditInstanceDialog.tsx` — Java 25 w dropdownie
 
-**`src/lib/java.ts`** — Java version mapping:
-- Dodano Java 25 (`"25"`) do `JAVA_REQUIREMENTS` ("Minecraft 26.x+")
-- `getJavaVersionForMc()`: `major >= 26` → zwraca `"25"` (obsługuje 26, 26.0, 26.0.1, 27.0 itd.)
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)
 
-**`src/types/minecraft.ts`** — typy dla nowego formatu:
-- `MinecraftLoggingConfig` — interfejs dla obiektu `logging` w version JSON
-- `ResolvedLoggingConfig` — rozpoznana konfiguracja logowania (URL pliku, ścieżka, SHA1, argument)
-- `assets?: string` — nowe pole string w `MinecraftVersionJson`
-- `logging?: ResolvedLoggingConfig` — w `ResolvedVersion`
+## 2026-07-07 — Usunięcie offline/dev mode + fix logów w konsoli
 
-**`src/lib/version-resolver.ts`** — obsługa `logging`:
-- Po resolucji bibliotek, parsuje `versionJson.logging?.client?.file` i tworzy `ResolvedLoggingConfig`
-- Dołącza do zwracanego `ResolvedVersion`
+### 🧹 Usunięcie offline/dev mode
 
-**`src/lib/minecraft-core.ts`** — JVM arg dla logowania:
-- W `generateLaunchArgs`: jeśli `version.logging` istnieje, zamienia `${path}` na ścieżkę `assets/log_configs/{fileId}`
-- Dodaje argument do JVM args
+Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowane jako Microsoft:
+- `src/types/auth.ts` — usunięto `offline?: boolean` z `MinecraftSession`
+- `src/types/account.ts` — usunięto `offline: boolean` z `AccountMeta`, `AccountData`, `AccountDisplay`
+- `src/lib/accounts.ts` — usunięto `session.offline ?? false` i `offline: accountData.offline`
+- `src/hooks/useAccounts.ts` — usunięto `offline: a.offline`
+- `src/components/AccountSwitcher.tsx` — usunięto `isOffline` state, "Tryb offline" text, zielona kropka zawsze dla aktywnego konta
+- `src-tauri/src/account_manager.rs` — usunięto `offline: bool` z `AccountMeta` i z `save_account()`
+- `src-tauri/src/lib.rs` — usunięto `offline: bool` z komendy `save_account`
 
-**`src-tauri/src/minecraft_core.rs`** — background thread safety:
-- Wszystkie 4 funkcje background wrapper (`download_libraries_background`, `download_assets_background`, `download_client_jar_background`, `extract_natives_background`) owinięte w `std::panic::catch_unwind`
-- Jeśli wątek panikuje (reqwest TLS error, assertion failure itp.), emituje `download:error` z komunikatem zamiast cichej śmierci
+### 🔥 Fix: Brak logów w konsoli
 
-#### Zmodyfikowane pliki
-- `src/lib/java.ts` — Java 25 + fix getJavaVersionForMc
-- `src/types/minecraft.ts` — MinecraftLoggingConfig, ResolvedLoggingConfig, assets: string, logging
-- `src/lib/version-resolver.ts` — obsługa logging config
-- `src/lib/minecraft-core.ts` — JVM arg z logging config path
-- `src-tauri/src/minecraft_core.rs` — catch_unwind we wszystkich background wrapperach
+**Przyczyna:** W ramach fixa 26.x dodaliśmy argument JVM `-Dlog4j.configurationFile=${path}` wskazujący na plik konfiguracyjny log4j2. Plik nie był pobierany (brak implementacji downloadu), więc log4j zamiast stdout kierował logi do pliku → konsola była pusta.
 
-#### Status: DO TESTÓW
-Wymaga przebudowania apki (`npm run tauri build` lub `tauri dev`):
-1. Instancja 26.1/26.2 uruchamia się (potrzebuje Javy 25 — pobierz przez Java Settings)
-2. UI nie wisi przy błędach sieciowych (catch_unwind emituje error zamiast cichej paniki)
-3. Logging config nie powoduje błędów log4j
+**Fix:** Tymczasowo wyłączono dodawanie argumentu logging config w `minecraft-core.ts`. Logi wracają do stdout i są widoczne w konsoli. TODO: dodać pobieranie pliku logging config z URL-a z version JSON i dopiero wtedy przywrócić argument.
 
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)

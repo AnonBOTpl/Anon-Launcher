@@ -26,8 +26,6 @@ export interface MinecraftSession {
   /** Xbox User ID (XUID) — potrzebny dla Minecraft 1.21+ */
   xuid?: string;
   expiresAt: string;
-  /** If true, session is a mock/dev session without real Microsoft auth */
-  offline?: boolean;
 }
 
 /** Auth state managed by useAuth hook */

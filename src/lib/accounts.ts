@@ -43,14 +43,10 @@ export async function saveAccount(session: MinecraftSession): Promise<void> {
     refreshToken: session.refreshToken,
     expiresAt: session.expiresAt,
     lastUsed: new Date().toISOString(),
-    offline: session.offline ?? false,
-  };
-
-  // Save metadata to backend (json file)
+  };    // Save metadata to backend (json file)
   await invoke("save_account", {
     uuid: accountData.uuid,
     username: accountData.username,
-    offline: accountData.offline,
   });
 
   // Save refresh token encrypted in Stronghold vault

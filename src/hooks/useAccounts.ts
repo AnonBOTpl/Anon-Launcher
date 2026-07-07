@@ -21,7 +21,6 @@ export function useAccounts() {
           uuid: a.uuid,
           username: a.username,
           lastUsed: a.last_used,
-          offline: a.offline,
           isActive: active?.uuid === a.uuid,
         })),
       );

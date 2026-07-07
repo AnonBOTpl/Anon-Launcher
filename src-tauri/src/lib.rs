@@ -261,11 +261,10 @@ fn save_account(
     state: State<'_, AppState>,
     uuid: String,
     username: String,
-    offline: bool,
 ) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
     let manager = AccountManager::new(&app_data_dir);
-    manager.save_account(&uuid, &username, offline)
+    manager.save_account(&uuid, &username)
 }
 
 #[tauri::command]

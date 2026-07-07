@@ -16,7 +16,7 @@ function AccountSwitcher() {
   const [open, setOpen] = useState(false);
 
   const initials = activeAccount?.username?.charAt(0).toUpperCase() ?? "?";
-  const isOffline = activeAccount?.offline ?? false;
+
 
   const handleSwitch = async (uuid: string) => {
     await switchAccount(uuid);
@@ -58,14 +58,12 @@ function AccountSwitcher() {
         className="group relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-accent cursor-pointer"
       >
         <span className="text-xs font-bold">{initials}</span>
-        {/* Online/Offline dot */}
+        {/* Online status dot */}
         <span
           className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-sidebar-background ${
-            isOffline
-              ? "bg-amber-500"
-              : activeAccount
-                ? "bg-emerald-500"
-                : "bg-muted-foreground/30"
+            activeAccount
+              ? "bg-emerald-500"
+              : "bg-muted-foreground/30"
           }`}
         />
       </button>
@@ -110,7 +108,7 @@ function AccountSwitcher() {
                       {account.username}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {account.offline ? "Tryb offline" : "Konto Microsoft"}
+                      Konto Microsoft
                     </div>
                   </div>
                   {account.isActive && (

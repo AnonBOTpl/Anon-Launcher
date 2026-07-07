@@ -43,6 +43,7 @@ function JavaSettings({
     { value: "11", label: "Java 11" },
     { value: "17", label: "Java 17" },
     { value: "21", label: "Java 21" },
+    { value: "25", label: "Java 25" },
   ];
 
   const handleBrowse = async () => {
