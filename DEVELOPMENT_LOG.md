@@ -1006,3 +1006,25 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — TASK-34: Frontend — tryb "Z modpacka" w CreateInstanceForm
+
+### Co zostało zrobione
+
+**Nowe pliki:**
+- `src/components/ModpackSearch.tsx` — wyszukiwarka modpacków:
+  - Używa `useModSearch({ projectType: "modpack" })`
+  - Dwa widoki: lista wyników z przyciskiem "Wybierz", szczegóły z selektorem wersji
+  - Ładuje wersje modpacka (`getProjectVersions`), auto-wybiera release
+  - Zwraca `ModpackSelection` do rodzica przez callback
+
+**Zmodyfikowane:**
+- `src/hooks/useModSearch.ts` — dodany `projectType` do filtrów (domyślnie `"mod"`)
+- `src/components/CreateInstanceForm.tsx` — przełącznik trybu "Ręczna" / "Z modpacka":
+  - Dwa przyciski z ikonami na górze formularza
+  - Tryb ręczny: działa jak do tej pory (VersionSelect + LoaderSelect)
+  - Tryb modpack: pokazuje ModpackSearch, auto-wypełnia nazwę z modpacka
+  - Submit wywołuje `create_instance` lub `create_instance_from_modpack`
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)

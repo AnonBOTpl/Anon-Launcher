@@ -8,6 +8,7 @@ export interface ModSearchFilters {
   loader: string;
   category?: string;
   sort: ModrinthSortIndex;
+  projectType?: string;
 }
 
 export interface ModSearchState {
@@ -28,6 +29,7 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
     loader: initialFilters?.loader ?? "fabric",
     category: initialFilters?.category,
     sort: initialFilters?.sort ?? "relevance",
+    projectType: initialFilters?.projectType ?? "mod",
   });
 
   const [state, setState] = useState<ModSearchState>({
@@ -55,8 +57,8 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
       try {
         const facets: string[][] = [];
 
-        // Filter by project type (mods only)
-        facets.push(["project_type:mod"]);
+        // Filter by project type
+        facets.push([`project_type:${searchFilters.projectType ?? "mod"}`]);
 
         // Filter by loader
         if (searchFilters.loader) {
