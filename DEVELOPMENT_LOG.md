@@ -603,19 +603,21 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 
 #### ❌ Do zrobienia
 - [ ] **TASK-15** — Tryb offline (cached session)
-- [ ] **TASK-16** — Kolejka pobrań (Download Manager)
-- [ ] **TASK-17** — Monitorowanie postępu
-- [ ] **TASK-18** — Pobieranie assetów i bibliotek (asset/biblioteki są pobierane bezpośrednio, nie przez Download Manager)
-- [ ] **TASK-19** — Wyszukiwarka modów (Modrinth)
-- [ ] **TASK-20** — Instalacja modów
+- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
+- [x] **TASK-20** — Instalacja modów
 - [x] **TASK-21** — Aktualizacja modów
-- [ ] **TASK-22** — Wykrywanie zależności
-- [ ] **TASK-23** — Snapshoty
-- [ ] **TASK-24** — Przywracanie snapshotów
+- [x] **TASK-22** — Wykrywanie zależności
+- [x] **TASK-23** — Snapshoty
+- [x] **TASK-24** — Przywracanie snapshotów
 - [ ] **TASK-25** — Obsługa crash-reportów
 - [ ] **TASK-27** — Avatar 2D w zakładce Profil
 - [ ] **TASK-28c** — Toasty i notyfikacje
 - [ ] **TASK-29** — Testy końcowe
+
+#### ❌ Anulowane
+- ~~**TASK-16** — Kolejka pobrań~~ (zbędne — background download + pasek postępu)
+- ~~**TASK-17** — Monitorowanie postępu~~ (zbędne — eventy `download:progress`)
+- ~~**TASK-18** — Pobieranie assetów i bibliotek~~ ✅ (zrealizowane w TASK-12)
 
 ## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
 
