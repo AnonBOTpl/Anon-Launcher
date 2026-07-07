@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -446,6 +447,107 @@ impl MinecraftCore {
     }
 
     // ── Utility ────────────────────────────────────────────────────
+
+    // ── Background (non-blocking) wrappers ──────────────────────────
+
+    /// Download libraries in background thread, emitting events.
+    pub fn download_libraries_background(
+        app_handle: AppHandle,
+        app_data_dir: PathBuf,
+        libraries: Vec<LibraryToDownload>,
+    ) {
+        std::thread::spawn(move || {
+            let core = MinecraftCore::new(&app_data_dir);
+            match core.download_libraries(&app_handle, libraries) {
+                Ok(_paths) => {
+                    let _ = app_handle.emit("download:complete", json!({
+                        "phase": "libraries"
+                    }));
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "libraries",
+                        "message": e
+                    }));
+                }
+            }
+        });
+    }
+
+    /// Download assets in background thread, emitting events.
+    pub fn download_assets_background(
+        app_handle: AppHandle,
+        app_data_dir: PathBuf,
+        index: AssetIndexToDownload,
+    ) {
+        std::thread::spawn(move || {
+            let core = MinecraftCore::new(&app_data_dir);
+            match core.download_assets(&app_handle, &index) {
+                Ok(_count) => {
+                    let _ = app_handle.emit("download:complete", json!({
+                        "phase": "assets"
+                    }));
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "assets",
+                        "message": e
+                    }));
+                }
+            }
+        });
+    }
+
+    /// Download client jar in background thread, emitting events.
+    pub fn download_client_jar_background(
+        app_handle: AppHandle,
+        app_data_dir: PathBuf,
+        mc_version: String,
+        url: String,
+        expected_size: u64,
+    ) {
+        std::thread::spawn(move || {
+            let core = MinecraftCore::new(&app_data_dir);
+            match core.download_client_jar(&app_handle, &mc_version, &url, expected_size) {
+                Ok(_path) => {
+                    let _ = app_handle.emit("download:complete", json!({
+                        "phase": "client"
+                    }));
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "client",
+                        "message": e
+                    }));
+                }
+            }
+        });
+    }
+
+    /// Extract natives in background thread, emitting events.
+    pub fn extract_natives_background(
+        app_handle: AppHandle,
+        app_data_dir: PathBuf,
+        natives: Vec<NativeToExtract>,
+        game_dir: String,
+    ) {
+        std::thread::spawn(move || {
+            let core = MinecraftCore::new(&app_data_dir);
+            match core.extract_natives(&app_handle, natives, &game_dir) {
+                Ok(_paths) => {
+                    let _ = app_handle.emit("download:complete", json!({
+                        "phase": "natives"
+                    }));
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("download:error", json!({
+                        "phase": "natives",
+                        "message": e
+                    }));
+                }
+            }
+        });
+    }
 
     /// Download the client jar and version JSON for a version with progress events.
     /// Both files are required — Minecraft uses the JSON for license verification.

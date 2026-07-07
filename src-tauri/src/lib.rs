@@ -8,6 +8,7 @@ mod minecraft_core;
 mod dependency_resolver;
 mod mod_installer;
 mod process_manager;
+mod snapshot;
 mod zip_export;
 mod zip_import;
 
@@ -347,10 +348,14 @@ fn download_java(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     version: String,
-) -> Result<java_manager::DownloadStatus, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let manager = java_manager::JavaManager::new(&app_data_dir);
-    manager.download_java(&version)
+    java_manager::JavaManager::download_java_background(
+        app_handle.clone(),
+        app_data_dir,
+        version,
+    );
+    Ok(())
 }
 
 #[tauri::command]
@@ -376,10 +381,14 @@ fn download_libraries(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     libraries: Vec<minecraft_core::LibraryToDownload>,
-) -> Result<Vec<String>, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let core = minecraft_core::MinecraftCore::new(&app_data_dir);
-    core.download_libraries(&app_handle, libraries)
+    minecraft_core::MinecraftCore::download_libraries_background(
+        app_handle.clone(),
+        app_data_dir,
+        libraries,
+    );
+    Ok(())
 }
 
 #[tauri::command]
@@ -389,10 +398,16 @@ fn download_client_jar(
     mc_version: String,
     url: String,
     expected_size: u64,
-) -> Result<String, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let core = minecraft_core::MinecraftCore::new(&app_data_dir);
-    core.download_client_jar(&app_handle, &mc_version, &url, expected_size)
+    minecraft_core::MinecraftCore::download_client_jar_background(
+        app_handle.clone(),
+        app_data_dir,
+        mc_version,
+        url,
+        expected_size,
+    );
+    Ok(())
 }
 
 #[tauri::command]
@@ -400,10 +415,14 @@ fn download_assets(
     app_handle: AppHandle,
     state: State<'_, AppState>,
     index: minecraft_core::AssetIndexToDownload,
-) -> Result<u64, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let core = minecraft_core::MinecraftCore::new(&app_data_dir);
-    core.download_assets(&app_handle, &index)
+    minecraft_core::MinecraftCore::download_assets_background(
+        app_handle.clone(),
+        app_data_dir,
+        index,
+    );
+    Ok(())
 }
 
 #[tauri::command]
@@ -412,10 +431,15 @@ fn extract_natives(
     state: State<'_, AppState>,
     natives: Vec<minecraft_core::NativeToExtract>,
     game_dir: String,
-) -> Result<Vec<String>, String> {
+) -> Result<(), String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    let core = minecraft_core::MinecraftCore::new(&app_data_dir);
-    core.extract_natives(&app_handle, natives, &game_dir)
+    minecraft_core::MinecraftCore::extract_natives_background(
+        app_handle.clone(),
+        app_data_dir,
+        natives,
+        game_dir,
+    );
+    Ok(())
 }
 
 #[tauri::command]
@@ -555,6 +579,52 @@ fn update_mod(
     )
 }
 
+// ─── Snapshot Commands ────────────────────────────────────────────
+
+#[tauri::command]
+fn create_snapshot(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    mode: String,
+) -> Result<snapshot::SnapshotInfo, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    snapshot::create_snapshot(&app_data_dir, &instance_name, &mode).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_snapshots(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+) -> Result<Vec<snapshot::SnapshotInfo>, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    snapshot::list_snapshots(&app_data_dir, &instance_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_snapshot(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    timestamp: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    snapshot::delete_snapshot(&app_data_dir, &instance_name, &timestamp).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn restore_snapshot(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    timestamp: String,
+    mode: String,
+) -> Result<snapshot::RestoreResult, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    snapshot::restore_snapshot(&app_data_dir, &instance_name, &timestamp, &mode).map_err(|e| e.to_string())
+}
+
 fn get_app_data_dir(app_handle: &AppHandle, state: &State<'_, AppState>) -> Result<std::path::PathBuf, String> {
     let mut guard = state.app_data_dir.lock().map_err(|e| format!("Lock error: {}", e))?;
 
@@ -606,6 +676,10 @@ pub fn run() {
             remove_mod,
             update_mod,
             resolve_mod_dependencies,
+            create_snapshot,
+            list_snapshots,
+            delete_snapshot,
+            restore_snapshot,
             create_instance,
             read_manifest,
             list_instances,

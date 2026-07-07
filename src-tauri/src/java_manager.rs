@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Emitter};
 
 // ─── Data structures ────────────────────────────────────────────────
 
@@ -237,6 +239,33 @@ impl JavaManager {
                 java_path.display()
             ))
         }
+    }
+
+    /// Download Java in background thread, emitting events.
+    pub fn download_java_background(
+        app_handle: AppHandle,
+        app_data_dir: PathBuf,
+        version: String,
+    ) {
+        std::thread::spawn(move || {
+            let manager = JavaManager::new(&app_data_dir);
+            match manager.download_java(&version) {
+                Ok(status) => {
+                    let _ = app_handle.emit("java:download-complete", json!({
+                        "version": status.version,
+                        "success": status.success,
+                        "path": status.path,
+                        "error": status.error,
+                    }));
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("java:download-error", json!({
+                        "version": version,
+                        "message": e,
+                    }));
+                }
+            }
+        });
     }
 
     /// Verify a custom Java path by running `java -version`.

@@ -626,6 +626,83 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 - [ ] **TASK-28c** — Toasty i notyfikacje
 - [ ] **TASK-29** — Testy końcowe
 
+## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
+
+### 🔥 Fix: 1.12.2 crash (text2speech) i 1.16.5 crash (LWJGL) — biblioteki z `natives` traciły main JAR z classpath
+
+#### Przyczyna
+W manifeście wersji Minecrafta biblioteki z polem `natives` występują DWUKROTNIE:
+- Wpis 1: `downloads.artifact` (główny JAR, potrzebny na classpath)
+- Wpis 2: `downloads.artifact` + `natives` (ten sam JAR + wersja z natywnymi DLL)
+
+`resolveLibrary()` sprawdza `lib.natives` PIERWSZY → zwraca wersję native (`isNative: true`).
+Dedup (`getDedupKey`) nadpisuje wpis 1 wpisem 2 → main JAR znika z classpath → `NoClassDefFoundError`.
+
+#### Fix (`src/lib/version-resolver.ts`)
+Gdy biblioteka ma BOTH `artifact` + `natives`, dodajemy artifact osobno jako `isNative: false`
+z unikalnym kluczem dedup (`:artifact`). Main JAR pozostaje na classpath.
+
+**Dotyczy wersji:** 1.8.9 (1 lib), 1.12.2 (3 libs), 1.16.5 (16 libs!), 1.18.2 (16 libs).
+**Nie dotyczy:** 1.20.4+ (nie używają już pola `natives`).
+
+#### Wymaga przebudowania apki (`tauri dev` lub `build`) — zmiana w TypeScript.
+
+### 🔥 Fix: UI freeze podczas pobierania assetów/bibliotek/Javy
+
+#### Przyczyna
+Wszystkie downloady używały `reqwest::blocking::get()` bezpośrednio w komendach Tauri → blokowały główne okno.
+
+#### Fix (wzorem `zip_export.rs`)
+**Rust:**
+- `minecraft_core.rs` — 4 funkcje background (`*_background`) spawniące `std::thread::spawn`, emitujące `download:complete`/`download:error` Tauri events
+- `java_manager.rs` — `download_java_background()` z eventami `java:download-complete`/`java:download-error`
+- `lib.rs` — wszystkie 5 komend Tauri zwracają `Ok(())` natychmiast (background thread robi resztę)
+
+**Frontend:**
+- `InstanceView.tsx` — `waitForDownload(phase)` Promise-based helper, listenery PRZED `invoke()` (🔒 brak race condition)
+- `java.ts` — `downloadJava()` event-based, zachowuje `Promise<DownloadStatus>` (kompatybilne z `useJavaRuntime.ts`)
+
+### Fix: Snapshot — pusta lista modów
+`read_mods_registry` szukał `mods.json` w root instancji zamiast w `mods/mods.json`. Naprawiono.
+
+### Zmodyfikowane pliki
+- `src/lib/version-resolver.ts` — fix text2speech/LWJGL classpath
+- `src-tauri/src/minecraft_core.rs` — background wrappers dla downloadów
+- `src-tauri/src/java_manager.rs` — `download_java_background`
+- `src-tauri/src/lib.rs` — komendy Tauri zwracają natychmiast
+- `src/pages/InstanceView.tsx` — event-based download flow
+- `src/lib/java.ts` — event-based `downloadJava`
+- `src-tauri/src/snapshot.rs` — fix ścieżki `mods.json`
+
+### Status: DO TESTÓW
+Zmiany nie były testowane — wymagają przebudowania apki i ręcznej weryfikacji:
+1. UI nie zamraża się przy pobieraniu
+2. 1.12.2 działa bez crasha text2speech
+3. 1.16.5 działa bez crasha LWJGL
+4. Snapshot pokazuje listę modów
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)
+
+## 2026-07-07 — TASK-23 + TASK-24: Snapshot system
+
+### Nowe pliki
+- `src-tauri/src/snapshot.rs` — create/list/delete/restore snapshotów (full + metadata mode)
+- `src/lib/snapshot.ts` — API wrappery
+- `src/hooks/useSnapshots.ts` — React hook
+- `src/components/SnapshotList.tsx` — lista snapshotów z datą/rozmiarem/liczbą modów
+- `src/components/RestoreSnapshotDialog.tsx` — dialog potwierdzenia przywrócenia
+
+### Zmodyfikowane
+- `src-tauri/src/lib.rs` — 4 komendy snapshot zarejestrowane
+- `src/components/InstanceTabs.tsx` — nowa zakładka Snapshoty
+- `src/components/ModList.tsx` — dialog snapshotu przed aktualizacją modów
+
+### Build
+- `tsc --noEmit` ✅
+- `cargo check` ✅
+
 ## 2026-07-06 — Fix: przełączanie kont + usunięcie DEV_MODE + fix Stronghold
 
 ### 🔥 Fix: Przełączanie kont — gra uruchamiała się na starym koncie
@@ -927,3 +1004,80 @@ Przełączanie działa w obie strony. Zero błędów Stronghold. ✅
 - [ ] **TASK-27** — Avatar 2D w zakładce Profil
 - [ ] **TASK-28c** — Toasty i notyfikacje
 - [ ] **TASK-29** — Testy końcowe
+
+## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
+
+### 🔥 Fix: 1.12.2 crash (text2speech) i 1.16.5 crash (LWJGL) — biblioteki z `natives` traciły main JAR z classpath
+
+#### Przyczyna
+W manifeście wersji Minecrafta biblioteki z polem `natives` występują DWUKROTNIE:
+- Wpis 1: `downloads.artifact` (główny JAR, potrzebny na classpath)
+- Wpis 2: `downloads.artifact` + `natives` (ten sam JAR + wersja z natywnymi DLL)
+
+`resolveLibrary()` sprawdza `lib.natives` PIERWSZY → zwraca wersję native (`isNative: true`).
+Dedup (`getDedupKey`) nadpisuje wpis 1 wpisem 2 → main JAR znika z classpath → `NoClassDefFoundError`.
+
+#### Fix (`src/lib/version-resolver.ts`)
+Gdy biblioteka ma BOTH `artifact` + `natives`, dodajemy artifact osobno jako `isNative: false`
+z unikalnym kluczem dedup (`:artifact`). Main JAR pozostaje na classpath.
+
+**Dotyczy wersji:** 1.8.9 (1 lib), 1.12.2 (3 libs), 1.16.5 (16 libs!), 1.18.2 (16 libs).
+**Nie dotyczy:** 1.20.4+ (nie używają już pola `natives`).
+
+#### Wymaga przebudowania apki (`tauri dev` lub `build`) — zmiana w TypeScript.
+
+### 🔥 Fix: UI freeze podczas pobierania assetów/bibliotek/Javy
+
+#### Przyczyna
+Wszystkie downloady używały `reqwest::blocking::get()` bezpośrednio w komendach Tauri → blokowały główne okno.
+
+#### Fix (wzorem `zip_export.rs`)
+**Rust:**
+- `minecraft_core.rs` — 4 funkcje background (`*_background`) spawniące `std::thread::spawn`, emitujące `download:complete`/`download:error` Tauri events
+- `java_manager.rs` — `download_java_background()` z eventami `java:download-complete`/`java:download-error`
+- `lib.rs` — wszystkie 5 komend Tauri zwracają `Ok(())` natychmiast (background thread robi resztę)
+
+**Frontend:**
+- `InstanceView.tsx` — `waitForDownload(phase)` Promise-based helper, listenery PRZED `invoke()` (🔒 brak race condition)
+- `java.ts` — `downloadJava()` event-based, zachowuje `Promise<DownloadStatus>` (kompatybilne z `useJavaRuntime.ts`)
+
+### Fix: Snapshot — pusta lista modów
+`read_mods_registry` szukał `mods.json` w root instancji zamiast w `mods/mods.json`. Naprawiono.
+
+### Zmodyfikowane pliki
+- `src/lib/version-resolver.ts` — fix text2speech/LWJGL classpath
+- `src-tauri/src/minecraft_core.rs` — background wrappers dla downloadów
+- `src-tauri/src/java_manager.rs` — `download_java_background`
+- `src-tauri/src/lib.rs` — komendy Tauri zwracają natychmiast
+- `src/pages/InstanceView.tsx` — event-based download flow
+- `src/lib/java.ts` — event-based `downloadJava`
+- `src-tauri/src/snapshot.rs` — fix ścieżki `mods.json`
+
+### Status: DO TESTÓW
+Zmiany nie były testowane — wymagają przebudowania apki i ręcznej weryfikacji:
+1. UI nie zamraża się przy pobieraniu
+2. 1.12.2 działa bez crasha text2speech
+3. 1.16.5 działa bez crasha LWJGL
+4. Snapshot pokazuje listę modów
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)
+
+## 2026-07-07 — TASK-23 + TASK-24: Snapshot system
+
+### Nowe pliki
+- `src-tauri/src/snapshot.rs` — create/list/delete/restore snapshotów (full + metadata mode)
+- `src/lib/snapshot.ts` — API wrappery
+- `src/hooks/useSnapshots.ts` — React hook
+- `src/components/SnapshotList.tsx` — lista snapshotów z datą/rozmiarem/liczbą modów
+- `src/components/RestoreSnapshotDialog.tsx` — dialog potwierdzenia przywrócenia
+
+### Zmodyfikowane
+- `src-tauri/src/lib.rs` — 4 komendy snapshot zarejestrowane
+- `src/components/InstanceTabs.tsx` — nowa zakładka Snapshoty
+- `src/components/ModList.tsx` — dialog snapshotu przed aktualizacją modów
+
+### Build
+- `tsc --noEmit` ✅
+- `cargo check` ✅

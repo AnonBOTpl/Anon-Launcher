@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import type { InstanceManifest } from "@/types/instance";
 import ModList from "@/components/ModList";
+import SnapshotList from "@/components/SnapshotList";
 
 interface Tab {
   id: string;
@@ -13,6 +14,7 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "gra", label: "Gra" },
   { id: "mody", label: "Mody" },
+  { id: "snapshoty", label: "Snapshoty" },
   { id: "logi", label: "Logi" },
   { id: "profil", label: "Profil" },
 ];
@@ -41,6 +43,18 @@ function tabContent(
           <p className="text-sm text-muted-foreground">
             Podgląd logów — zostanie zaimplementowany w TASK-26.
           </p>
+        </div>
+      );
+    case "snapshoty":
+      return (
+        <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
+          {instanceName ? (
+            <SnapshotList instanceName={instanceName} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Wybierz instancję, aby zarządzać snapshotami.
+            </p>
+          )}
         </div>
       );
     case "profil":

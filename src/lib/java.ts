@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -87,9 +88,43 @@ export async function fetchJavaVersions(): Promise<JavaVersionInfo[]> {
   return invoke<JavaVersionInfo[]>("get_java_versions");
 }
 
-/** Download and extract a Java runtime. */
+/** Download and extract a Java runtime (event-based, non-blocking). */
 export async function downloadJava(version: string): Promise<DownloadStatus> {
-  return invoke<DownloadStatus>("download_java", { version });
+  // Set up event listeners BEFORE calling invoke to avoid race conditions
+  return new Promise<DownloadStatus>((resolve, reject) => {
+    let unlistenComplete: (() => void) | null = null;
+    let unlistenError: (() => void) | null = null;
+
+    listen<{ version: string; success: boolean; path: string | null; error: string | null }>(
+      "java:download-complete",
+      (event) => {
+        if (event.payload.version === version) {
+          unlistenComplete?.();
+          unlistenError?.();
+          resolve({
+            version: event.payload.version,
+            success: event.payload.success,
+            path: event.payload.path,
+            error: event.payload.error,
+          });
+        }
+      },
+    ).then((fn) => { unlistenComplete = fn; });
+
+    listen<{ version: string; message: string }>(
+      "java:download-error",
+      (event) => {
+        if (event.payload.version === version) {
+          unlistenComplete?.();
+          unlistenError?.();
+          reject(new Error(event.payload.message));
+        }
+      },
+    ).then((fn) => { unlistenError = fn; });
+
+    // Start download (returns immediately)
+    invoke("download_java", { version });
+  });
 }
 
 /** Get path to a locally installed Java executable. */

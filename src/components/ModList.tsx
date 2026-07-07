@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ModSearch from "@/components/ModSearch";
 import MissingDepsWarning from "@/components/MissingDepsWarning";
+import * as snapshotApi from "@/lib/snapshot";
 import type { InstalledMod } from "@/lib/mod-installer";
 import type { ModUpdate } from "@/lib/mod-updater";
 import type { ModrinthVersion } from "@/types/modrinth";
@@ -245,6 +246,11 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
   const [depCircular, setDepCircular] = useState(false);
   const [depModName, setDepModName] = useState("");
   const [depInstalling, setDepInstalling] = useState(false);
+  // Snapshot before update dialog
+  const [snapshotBeforeUpdate, setSnapshotBeforeUpdate] = useState<{
+    mode: "full" | "metadata" | null;
+    creating: boolean;
+  }>({ mode: null, creating: false });
   // Pending install params saved while dep dialog is shown
   const [pendingInstall, setPendingInstall] = useState<{
     versionId: string;
@@ -301,23 +307,41 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
   );
 
   const handleUpdateAll = useCallback(async () => {
-    for (const update of updates) {
-      try {
-        await updateModApi(
-          instanceName,
-          update.mod.fileName,
-          update.newFile.filename,
-          update.newFile.url,
-          update.newVersion.id,
-          update.newVersionNumber,
-          update.mod.iconUrl,
-        );
-      } catch {
-        // Continue with next
+    // Show snapshot dialog before updating
+    setSnapshotBeforeUpdate({ mode: null, creating: false });
+  }, []);
+
+  const handleConfirmUpdateAll = useCallback(
+    async (snapshotMode: "full" | "metadata" | "skip") => {
+      if (snapshotMode !== "skip") {
+        setSnapshotBeforeUpdate({ mode: snapshotMode, creating: true });
+        try {
+          await snapshotApi.createSnapshot(instanceName, snapshotMode);
+        } catch (err) {
+          console.error("Failed to create snapshot before update:", err);
+        }
       }
-    }
-    await refresh();
-  }, [instanceName, refresh, updates]);
+      setSnapshotBeforeUpdate({ mode: null, creating: false });
+
+      for (const update of updates) {
+        try {
+          await updateModApi(
+            instanceName,
+            update.mod.fileName,
+            update.newFile.filename,
+            update.newFile.url,
+            update.newVersion.id,
+            update.newVersionNumber,
+            update.mod.iconUrl,
+          );
+        } catch {
+          // Continue with next
+        }
+      }
+      await refresh();
+    },
+    [instanceName, refresh, updates],
+  );
 
   // ─── Dependency checking before install ─────────────────────────
 
@@ -637,6 +661,79 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Snapshot before update dialog */}
+      {snapshotBeforeUpdate.mode === null && !snapshotBeforeUpdate.creating && hasUpdates && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setSnapshotBeforeUpdate({ mode: null, creating: false })}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-1">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold">Snapshot przed aktualizacją</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Utworzyć backup instancji przed aktualizacją modów?
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              <Button
+                size="sm"
+                onClick={() => handleConfirmUpdateAll("full")}
+                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Pełna kopia (zalecane)
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleConfirmUpdateAll("metadata")}
+                className="w-full text-xs"
+              >
+                Tylko metadane
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleConfirmUpdateAll("skip")}
+                className="w-full text-xs text-muted-foreground"
+              >
+                Nie twórz
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creating snapshot loading */}
+      {snapshotBeforeUpdate.creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-fade-in">
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
+              <p className="text-sm text-muted-foreground">
+                Tworzenie snapshotu...
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Missing dependencies warning dialog */}

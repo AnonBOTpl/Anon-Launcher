@@ -51,6 +51,30 @@ function InstanceView() {
     fetchGameDir();
   }, []);
 
+  // Helper: wait for a download phase to complete (via events)
+  const waitForDownload = useCallback(async (phase: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      let unlistenComplete: UnlistenFn | null = null;
+      let unlistenError: UnlistenFn | null = null;
+
+      listen<{ phase: string }>("download:complete", (event) => {
+        if (event.payload.phase === phase) {
+          unlistenComplete?.();
+          unlistenError?.();
+          resolve();
+        }
+      }).then(fn => { unlistenComplete = fn; });
+
+      listen<{ phase: string; message: string }>("download:error", (event) => {
+        if (event.payload.phase === phase) {
+          unlistenComplete?.();
+          unlistenError?.();
+          reject(new Error(event.payload.message));
+        }
+      }).then(fn => { unlistenError = fn; });
+    });
+  }, []);
+
   // Listen for download progress events from backend
   useEffect(() => {
     let cancelled = false;
@@ -132,32 +156,49 @@ function InstanceView() {
       // Get download lists
       const { libraries, clientJar } = getDownloadList(resolved);
 
+      // ── Background download sequence ─────────────────────────────
+      // Each invoke starts the download in a background thread and returns
+      // immediately. We wait for the completion event before proceeding.
+      // IMPORTANT: Set up event listeners BEFORE calling invoke to avoid
+      // race conditions where the thread finishes before listeners register.
+
       // Download client jar
-      await invoke("download_client_jar", {
+      setDownloadProgress({ phase: "client", current: 0, total: 2, status: "Pobieranie client.jar..." });
+      const dlClient = waitForDownload("client");
+      invoke("download_client_jar", {
         mcVersion: manifest.mcVersion,
         url: clientJar.url,
         expectedSize: clientJar.size,
       });
+      await dlClient;
 
       // Download regular libraries (backend stores in $APP_DATA/libraries/)
       if (libraries.length > 0) {
-        await invoke("download_libraries", { libraries });
+        const dlLibs = waitForDownload("libraries");
+        invoke("download_libraries", { libraries });
+        await dlLibs;
       }
 
       // Download native libraries and extract DLLs/.so from JARs
       const { natives } = getDownloadList(resolved);
       if (natives.length > 0) {
-        await invoke("download_libraries", { libraries: natives });
+        const dlNatives = waitForDownload("libraries");
+        invoke("download_libraries", { libraries: natives });
+        await dlNatives;
         // Extract to global $APP_DATA/natives/ (shared between instances)
-        await invoke("extract_natives", {
+        const extractNatives = waitForDownload("natives");
+        invoke("extract_natives", {
           natives: natives.map((n: { path: string }) => ({ jarPath: n.path })),
           gameDir: baseDir,
         });
+        await extractNatives;
       }
 
       // Download assets (index + objects)
-      setDownloadProgress({ phase: "client", current: 0, total: 1, status: "Pobieranie assetów..." });
-      await invoke("download_assets", { index: resolved.assetIndex });
+      setDownloadProgress({ phase: "assets", current: 0, total: 1, status: "Pobieranie assetów..." });
+      const dlAssets = waitForDownload("assets");
+      invoke("download_assets", { index: resolved.assetIndex });
+      await dlAssets;
 
       // Get active account session — auto-odświeża token jeśli wygasł
       const session = await tryRefreshSession();

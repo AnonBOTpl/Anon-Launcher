@@ -325,6 +325,28 @@ export async function resolveVersion(
         resolvedLibraries.push(resolved);
       }
     }
+
+    // Special case: library has BOTH artifact (main JAR) and natives.
+    // resolveLibrary() returns only the native variant when lib.natives exists,
+    // causing the main JAR to be lost from the classpath.
+    // We need to add the artifact separately so it stays on the classpath.
+    // e.g. com.mojang:text2speech:1.10.3 for Minecraft 1.12.2
+    if (lib.natives && lib.downloads?.artifact) {
+      const artifact = lib.downloads.artifact;
+      const artifactName = `${lib.name}:artifact`;
+      // Check by exact artifact name — NOT by dedupKey, which would falsely
+      // match the native variant (same base name) and skip adding.
+      if (!resolvedLibraries.some((l) => l.name === artifactName)) {
+        resolvedLibraries.push({
+          name: artifactName,
+          url: artifact.url,
+          path: artifact.path,
+          sha1: artifact.sha1,
+          size: artifact.size,
+          isNative: false,
+        });
+      }
+    }
   }
 
   // ── Resolve arguments ──────────────────────────────────────────────
