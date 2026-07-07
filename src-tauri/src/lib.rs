@@ -1,5 +1,6 @@
 mod account_manager;
 mod auth;
+mod content_installer;
 mod instance_manager;
 mod java_manager;
 mod manifest;
@@ -7,6 +8,7 @@ mod manifest_migration;
 mod minecraft_core;
 mod dependency_resolver;
 mod mod_installer;
+mod modpack_installer;
 mod process_manager;
 mod snapshot;
 mod zip_export;
@@ -578,6 +580,56 @@ fn update_mod(
     )
 }
 
+// ─── Content Installer Commands ───────────────────────────────────
+
+#[tauri::command]
+fn install_instance_content(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    folder: String,
+    file_name: String,
+    download_url: String,
+) -> Result<content_installer::InstalledContent, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    content_installer::install_content(&app_data_dir, &instance_name, &folder, &file_name, &download_url)
+}
+
+#[tauri::command]
+fn list_instance_content(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    folder: String,
+) -> Result<Vec<content_installer::InstalledContent>, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    content_installer::list_content(&app_data_dir, &instance_name, &folder)
+}
+
+#[tauri::command]
+fn remove_instance_content(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    folder: String,
+    file_name: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    content_installer::remove_content(&app_data_dir, &instance_name, &folder, &file_name)
+}
+
+// ─── Modpack Installer Commands ─────────────────────────────────────
+
+#[tauri::command]
+fn create_instance_from_modpack(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    input: modpack_installer::CreateFromModpackInput,
+) -> Result<modpack_installer::CreateFromModpackResult, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    modpack_installer::create_from_modpack(app_handle.clone(), app_data_dir, input)
+}
+
 // ─── Snapshot Commands ────────────────────────────────────────────
 
 #[tauri::command]
@@ -715,6 +767,10 @@ pub fn run() {
             launch_instance,
             stop_instance,
             get_instance_status,
+            install_instance_content,
+            list_instance_content,
+            remove_instance_content,
+            create_instance_from_modpack,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

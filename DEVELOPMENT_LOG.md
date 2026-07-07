@@ -983,3 +983,26 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — TASK-33: Backend — instalacja resourcepacków/shaderów + parsowanie .mrpack
+
+### Co zostało zrobione
+
+**Nowe pliki:**
+- `src-tauri/src/content_installer.rs` — generyczny installer contentu:
+  - `install_content()` — pobiera plik z URL i zapisuje w `{instanceDir}/{folder}/{fileName}`
+  - `list_content()` — skanuje folder, zwraca posortowaną listę plików
+  - `remove_content()` — usuwa plik z folderu
+- `src-tauri/src/modpack_installer.rs` — instalacja modpacków:
+  - `create_from_modpack()` — pełny flow: download .mrpack → parse modrinth.index.json → create instance → download all files → copy overrides
+  - Emituje `modpack:progress` eventy przez cały proces
+  - Obsługa błędów: błędy pojedynczych plików nie przerywają całej operacji
+- `src/types/content.ts` — TypeScript typy (InstalledContent, ModpackProgressEvent, CreateFromModpackResult)
+- `src/lib/content-installer.ts` — frontend API wrapper (installContent, listContent, removeContent, createInstanceFromModpack)
+
+**Zmodyfikowane:**
+- `src-tauri/src/lib.rs` — dodane moduły `content_installer` i `modpack_installer`, 4 nowe komendy Tauri
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)
