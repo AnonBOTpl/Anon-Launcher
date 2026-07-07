@@ -12,12 +12,22 @@ export async function installContent(
   folder: "resourcepacks" | "shaderpacks",
   fileName: string,
   downloadUrl: string,
+  title?: string | null,
+  versionId?: string | null,
+  versionNumber?: string | null,
+  projectSlug?: string | null,
+  iconUrl?: string | null,
 ): Promise<InstalledContent> {
   return invoke<InstalledContent>("install_instance_content", {
     instanceName,
     folder,
     fileName,
     downloadUrl,
+    title,
+    versionId,
+    versionNumber,
+    projectSlug,
+    iconUrl,
   });
 }
 

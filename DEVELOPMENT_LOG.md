@@ -1064,3 +1064,67 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — TASK-35: Paczki zasobów + Shadery (ContentList, ContentBrowser) + content_registry.json
+
+### Co zostało zrobione
+
+**Rust — content_registry.json:**
+- `content_installer.rs` — dodany rejestr `content_registry.json` (na poziomie instancji) przechowujący metadane: title, versionId, versionNumber, projectSlug, iconUrl
+- Funkcje: `register_content_metadata()`, `remove_content_metadata()`, `read_registry()`, `write_registry()`
+- `install_content()` przyjmuje teraz 5 nowych parametrów metadata i zapisuje do rejestru
+- `list_content()` scala dane z rejestru z plikami na dysku
+- `remove_content()` usuwa też wpis z rejestru
+- `lib.rs` — `install_instance_content` komenda rozszerzona o parametry metadata
+
+**Nowe komponenty:**
+- `ContentList.tsx` — lista zainstalowanych paczek/shaderów z ikoną, wersją, rozmiarem i przyciskiem usuwania + banner Iris Shaders dla zakładki shaderów
+- `ContentBrowser.tsx` — generyczna wyszukiwarka Modrinth (resourcepack lub shader) z widokiem szczegółów i instalacją
+
+**InstanceTabs.tsx — nowe zakładki:**
+- **Paczki zasobów** — widoczna zawsze, używa ContentList z folder="resourcepacks"
+- **Shadery** — widoczna tylko dla Fabric (ukryta dla Vanilli). Detekcja Iris przez `listMods()` — jeśli brak, banner z przyciskiem "Zainstaluj Iris Shaders"
+- Instalacja Iris: pobiera `getProject("iris")` + wersje pasujące do MC wersji → `installMod()`
+
+**Fix: warning dead_code:**
+- Usunięta stara synchroniczna `create_from_modpack()` (zastąpiona przez `create_from_modpack_background`) — cargo check bez warningów
+
+**Export/import — już obsługuje content:**
+- `zip_export.rs` używa `WalkDir::new(&instance_dir)` — rekurencyjnie przechodzi cały folder instancji, automatycznie dołączając `resourcepacks/`, `shaderpacks/` i `content_registry.json`
+- `zip_import.rs` wypakowuje wszystko z powrotem — zero dodatkowych zmian
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — TASK-35: Paczki zasobów + Shadery (ContentList, ContentBrowser) + content_registry.json
+
+### Co zostało zrobione
+
+**Rust — content_registry.json:**
+- `content_installer.rs` — dodany rejestr `content_registry.json` (na poziomie instancji) przechowujący metadane: title, versionId, versionNumber, projectSlug, iconUrl
+- Funkcje: `register_content_metadata()`, `remove_content_metadata()`, `read_registry()`, `write_registry()`
+- `install_content()` przyjmuje teraz 5 nowych parametrów metadata i zapisuje do rejestru
+- `list_content()` scala dane z rejestru z plikami na dysku
+- `remove_content()` usuwa też wpis z rejestru
+- `lib.rs` — `install_instance_content` komenda rozszerzona o parametry metadata
+
+**Nowe komponenty:**
+- `ContentList.tsx` — lista zainstalowanych paczek/shaderów z ikoną, wersją, rozmiarem i przyciskiem usuwania + banner Iris Shaders dla zakładki shaderów
+- `ContentBrowser.tsx` — generyczna wyszukiwarka Modrinth (resourcepack lub shader) z widokiem szczegółów i instalacją
+
+**InstanceTabs.tsx — nowe zakładki:**
+- **Paczki zasobów** — widoczna zawsze, używa ContentList z folder="resourcepacks"
+- **Shadery** — widoczna tylko dla Fabric (ukryta dla Vanilli). Detekcja Iris przez `listMods()` — jeśli brak, banner z przyciskiem "Zainstaluj Iris Shaders"
+- Instalacja Iris: pobiera `getProject("iris")` + wersje pasujące do MC wersji → `installMod()`
+
+**Fix: warning dead_code:**
+- Usunięta stara synchroniczna `create_from_modpack()` (zastąpiona przez `create_from_modpack_background`) — cargo check bez warningów
+
+**Export/import — już obsługuje content:**
+- `zip_export.rs` używa `WalkDir::new(&instance_dir)` — rekurencyjnie przechodzi cały folder instancji, automatycznie dołączając `resourcepacks/`, `shaderpacks/` i `content_registry.json`
+- `zip_import.rs` wypakowuje wszystko z powrotem — zero dodatkowych zmian
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)

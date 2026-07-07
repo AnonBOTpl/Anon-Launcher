@@ -4,6 +4,16 @@ export interface InstalledContent {
   fileName: string;
   size: number;
   modifiedAt: string;
+  /** Display title (from Modrinth project) */
+  title?: string | null;
+  /** Version ID on Modrinth */
+  versionId?: string | null;
+  /** Human-readable version number (e.g. "1.0.0") */
+  versionNumber?: string | null;
+  /** Modrinth project slug */
+  projectSlug?: string | null;
+  /** URL to project icon */
+  iconUrl?: string | null;
 }
 
 /** Progress event from modpack installation */

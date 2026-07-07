@@ -250,17 +250,6 @@ pub fn create_from_modpack_background(
 
 // ─── Public API ─────────────────────────────────────────────────────
 
-/// Create a new instance from a Modrinth modpack (.mrpack) — runs synchronously.
-/// Use `create_from_modpack_background` for non-blocking usage.
-pub fn create_from_modpack(
-    app_handle: AppHandle,
-    app_data_dir: PathBuf,
-    input: CreateFromModpackInput,
-) -> Result<CreateFromModpackResult, String> {
-    let cancel_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    create_from_modpack_inner(&app_handle, &app_data_dir, &input, &cancel_flag)
-}
-
 /// Internal implementation — accepts a cancellation flag.
 fn create_from_modpack_inner(
     app_handle: &AppHandle,

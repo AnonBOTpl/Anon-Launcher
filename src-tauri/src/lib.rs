@@ -591,9 +591,25 @@ fn install_instance_content(
     folder: String,
     file_name: String,
     download_url: String,
+    title: Option<String>,
+    version_id: Option<String>,
+    version_number: Option<String>,
+    project_slug: Option<String>,
+    icon_url: Option<String>,
 ) -> Result<content_installer::InstalledContent, String> {
     let app_data_dir = get_app_data_dir(&app_handle, &state)?;
-    content_installer::install_content(&app_data_dir, &instance_name, &folder, &file_name, &download_url)
+    content_installer::install_content(
+        &app_data_dir,
+        &instance_name,
+        &folder,
+        &file_name,
+        &download_url,
+        title,
+        version_id,
+        version_number,
+        project_slug,
+        icon_url,
+    )
 }
 
 #[tauri::command]
