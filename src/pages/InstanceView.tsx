@@ -27,7 +27,7 @@ function InstanceView() {
   const [manifest, setManifest] = useState<InstanceManifest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status: launchStatus, launch, stop } = useLaunch(instanceName ?? undefined);
+  const { status: launchStatus, launch, stop, logs, clearLogs } = useLaunch(instanceName ?? undefined);
   const [canLaunch, setCanLaunch] = useState(true);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [gameDir, setGameDir] = useState("");
@@ -509,7 +509,7 @@ function InstanceView() {
         />
 
         {/* Instance tabs */}
-        <InstanceTabs />
+        <InstanceTabs logs={logs} onClearLogs={clearLogs} />
       </div>
     </div>
   );

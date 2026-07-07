@@ -952,3 +952,32 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 — Redesign konsoli + ukrycie zakładki Mody dla Vanilli + GameConsole w zakładce Logi
+
+### Co zostało zrobione
+
+**Vanilla — ukrycie zakładki Mody:**
+- `InstanceTabs.tsx` — zakładka "Mody" jest ukryta dla instancji Vanilla (sprawdza `instanceLoader === "vanilla"`)
+
+**Redesign konsoli (GameConsole.tsx):**
+- Całkowity redesign w stylu aplikacji (purple/slate, glassmorphism, backdrop blur)
+- **Przycisk autoscroll**: wyraźny, fioletowy (`bg-purple-500/15 text-purple-400`), zmienia się w "Ręczny" gdy wyłączony
+- **Przycisk Wyczyść**: widoczny z ikoną kosza, na hover zmienia kolor na destructive
+- **Autoscroll**: działa poprawnie przez `requestAnimationFrame` + `scrollTop = scrollHeight` + `hasNewLogs` state
+- **Filtrowanie**: karty (Wszystkie/Fabric/Silnik) z licznikami, level filtry (All/INFO/WARN/ERROR/DEBUG) z toggle, wyszukiwarka Ctrl+F
+- **Nowe logi indicator**: sticky przycisk "Nowe logi — kliknij, aby przewinąć" gdy autoscroll wyłączony
+- **Prefix extraction**: kolorowanie prefixu `[thread/LEVEL]` na szaro, treści według poziomu
+
+**GameConsole w zakładce Logi:**
+- `InstanceView.tsx` — pobiera `logs` i `clearLogs` z `useLaunch` i przekazuje do `InstanceTabs`
+- `InstanceTabs.tsx` — zakładka "Logi" zamiast placeholderu pokazuje `<GameConsole logs={logs} onClear={onClearLogs} maxHeight="400px" />`
+
+### Zmodyfikowane pliki
+- `src/components/GameConsole.tsx` — redesign konsoli (autoscroll, widoczne przyciski, filtry, styl)
+- `src/components/InstanceTabs.tsx` — ukrycie Mody dla Vanilli, GameConsole w zakładce Logi, nowe props
+- `src/pages/InstanceView.tsx` — przekazanie logs + clearLogs do InstanceTabs
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów, 0 warningów)
+- `cargo check` ✅ (0 błędów, 0 warningów)

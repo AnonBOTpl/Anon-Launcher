@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import type { LogLine, LogCategory, LogLevel } from "@/hooks/useLaunch";
 import { cn } from "@/lib/utils";
 
@@ -9,30 +9,19 @@ interface GameConsoleProps {
 }
 
 /** Tab configuration */
-interface TabDef {
-  key: LogCategory;
-  label: string;
-}
-
-const TABS: TabDef[] = [
+const TABS: { key: LogCategory; label: string }[] = [
   { key: "all", label: "Wszystkie" },
   { key: "fabric", label: "Fabric" },
   { key: "engine", label: "Silnik" },
 ];
 
 /** Level filter buttons */
-interface LevelFilter {
-  key: LogLevel;
-  label: string;
-  color: string;
-}
-
-const LEVEL_FILTERS: LevelFilter[] = [
-  { key: "all", label: "All", color: "text-[#CCC]" },
-  { key: "info", label: "INFO", color: "text-blue-400" },
-  { key: "warn", label: "WARN", color: "text-yellow-400" },
-  { key: "error", label: "ERROR", color: "text-red-400" },
-  { key: "debug", label: "DEBUG", color: "text-gray-500" },
+const LEVEL_FILTERS: { key: LogLevel; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "info", label: "INFO" },
+  { key: "warn", label: "WARN" },
+  { key: "error", label: "ERROR" },
+  { key: "debug", label: "DEBUG" },
 ];
 
 /**
@@ -56,7 +45,14 @@ function extractPrefix(text: string): string | null {
 }
 
 /**
- * Game console component styled like a terminal.
+ * Determine if content is scrolled to the bottom (within threshold).
+ */
+function isScrolledToBottom(el: HTMLElement, threshold = 30): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+}
+
+/**
+ * Game console component styled to match the app's purple/slate theme.
  * Displays Minecraft stdout/stderr logs with auto-scroll,
  * categorized tabs (All / Fabric / Engine), level filtering,
  * and text search.
@@ -68,15 +64,13 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
   const [activeTab, setActiveTab] = useState<LogCategory>("all");
   const [levelFilter, setLevelFilter] = useState<LogLevel>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasNewLogs, setHasNewLogs] = useState(false);
 
   // Filter logs based on active tab, level filter and search
   const filteredLogs = useMemo(() => {
     return logs.filter((line) => {
-      // Tab filter
       if (activeTab !== "all" && line.category !== activeTab) return false;
-      // Level filter
       if (levelFilter !== "all" && line.level !== levelFilter) return false;
-      // Search filter (case-insensitive)
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!line.text.toLowerCase().includes(q)) return false;
@@ -85,12 +79,33 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
     });
   }, [logs, activeTab, levelFilter, searchQuery]);
 
-  // Auto-scroll to bottom when new logs arrive
+  // Track if user scrolled up — disable auto-scroll
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const atBottom = isScrolledToBottom(scrollRef.current);
+    setAutoScroll(atBottom);
+  }, []);
+
+  // Auto-scroll when new logs arrive, but only if user is at the bottom
+  const prevLogsLength = useRef(filteredLogs.length);
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (filteredLogs.length > prevLogsLength.current) {
+      setHasNewLogs(true);
+      prevLogsLength.current = filteredLogs.length;
     }
-  }, [filteredLogs, autoScroll]);
+  }, [filteredLogs.length]);
+
+  useEffect(() => {
+    if (autoScroll && scrollRef.current && hasNewLogs) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        if (scrollRef.current && autoScroll) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
+      setHasNewLogs(false);
+    }
+  }, [filteredLogs, autoScroll, hasNewLogs]);
 
   // Keyboard shortcut: Ctrl+F to focus search
   useEffect(() => {
@@ -110,36 +125,36 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
 
   return (
     <div
-      className="rounded-xl border border-border/50 overflow-hidden bg-[#1E1E1E] flex flex-col"
+      className="rounded-xl border border-border/50 overflow-hidden bg-card/60 backdrop-blur-sm flex flex-col"
       style={{ maxHeight }}
     >
       {/* ─── Toolbar ─────────────────────────────────────── */}
-      <div className="flex flex-col shrink-0 border-b border-[#333]">
+      <div className="flex flex-col shrink-0 border-b border-border/50 bg-card/40">
         {/* Top row: title + actions */}
-        <div className="flex items-center justify-between px-3 py-1.5">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex items-center gap-3">
             <span
               className={cn(
                 "w-2 h-2 rounded-full",
-                logs.length > 0 ? "bg-green-500 animate-pulse" : "bg-purple-500",
+                logs.length > 0 ? "bg-emerald-500 animate-pulse" : "bg-purple-500",
               )}
             />
-            <span className="text-xs font-mono text-[#CCC]">Konsola</span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-sm font-medium text-foreground">Konsola</span>
+            <span className="text-xs text-muted-foreground">
               {hasFilters
                 ? `${filteredCount}/${totalCount} linii`
                 : `${totalCount} linii`}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {/* Auto-scroll toggle */}
             <button
               onClick={() => setAutoScroll(!autoScroll)}
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded text-[11px] transition-colors",
+                "inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all",
                 autoScroll
-                  ? "text-purple-400 hover:text-purple-300"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-purple-500/15 text-purple-400 hover:bg-purple-500/25"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
               title={autoScroll ? "Auto-scroll włączony" : "Auto-scroll wyłączony"}
             >
@@ -156,13 +171,14 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
+              {autoScroll ? "Auto" : "Ręczny"}
             </button>
             {/* Clear */}
             {onClear && (
               <button
                 onClick={onClear}
-                className="flex h-6 w-6 items-center justify-center rounded text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                title="Wyczyść"
+                className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                title="Wyczyść konsolę"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -178,47 +194,43 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                   <path d="M3 6h18" />
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                 </svg>
+                Wyczyść
               </button>
             )}
           </div>
         </div>
 
-        {/* Tabs row */}
-        <div className="flex items-center gap-0.5 px-2 pb-1">
-          {TABS.map((tab) => {
-            const count = tab.key === "all"
-              ? logs.length
-              : logs.filter((l) => l.category === tab.key).length;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={cn(
-                  "relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono rounded-t transition-colors",
-                  activeTab === tab.key
-                    ? "text-white bg-[#2A2A2A]"
-                    : "text-[#888] hover:text-[#CCC] hover:bg-[#252525]",
-                )}
-              >
-                {tab.key === "fabric" && (
-                  <span className="text-[10px]">🧵</span>
-                )}
-                {tab.key === "engine" && (
-                  <span className="text-[10px]">⚙️</span>
-                )}
-                {tab.label}
-                <span className="text-[10px] text-muted-foreground ml-0.5">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Tabs + filters row */}
+        <div className="flex items-center gap-3 px-4 pb-2.5 flex-wrap">
+          {/* Tabs */}
+          <div className="flex items-center gap-1">
+            {TABS.map((tab) => {
+              const count = tab.key === "all"
+                ? logs.length
+                : logs.filter((l) => l.category === tab.key).length;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    "relative px-2.5 py-1 text-xs font-medium rounded-md transition-all",
+                    activeTab === tab.key
+                      ? "bg-purple-500/15 text-purple-400 shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                  )}
+                >
+                  {tab.label}
+                  <span className="ml-1 text-[10px] opacity-60">({count})</span>
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Level filter + Search row */}
-        <div className="flex items-center gap-2 px-3 pb-2">
+          {/* Separator */}
+          <div className="h-4 w-px bg-border/50" />
+
           {/* Level filter buttons */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             {LEVEL_FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -226,8 +238,8 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                 className={cn(
                   "px-1.5 py-0.5 text-[10px] font-mono rounded transition-colors",
                   levelFilter === f.key
-                    ? `${f.color} bg-[#2A2A2A] ring-1 ring-[#444]`
-                    : "text-[#666] hover:text-[#999]",
+                    ? "bg-accent text-accent-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {f.label}
@@ -236,21 +248,21 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
           </div>
 
           {/* Spacer */}
-          <div className="flex-1" />
+          <div className="flex-1 min-w-[8px]" />
 
           {/* Search */}
           <div className="relative">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="10"
-              height="10"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[#666] pointer-events-none"
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             >
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
@@ -261,12 +273,12 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj... (Ctrl+F)"
-              className="w-36 h-6 rounded bg-[#252525] border border-[#444] pl-6 pr-2 text-[11px] font-mono text-[#CCC] placeholder-[#555] outline-none focus:border-purple-500/50 transition-colors"
+              className="w-40 h-7 rounded-lg bg-muted/50 border border-border/50 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-[#666] hover:text-[#CCC] transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -291,14 +303,15 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
       {/* ─── Log content ─────────────────────────────────── */}
       <div
         ref={scrollRef}
-        className="overflow-y-auto font-mono text-xs leading-relaxed p-3 flex-1 min-h-0"
+        onScroll={handleScroll}
+        className="overflow-y-auto font-mono text-xs leading-relaxed p-3 flex-1 min-h-0 bg-[#0A0A0F]"
       >
         {logs.length === 0 ? (
-          <p className="text-[#6A9955] italic">
-            [INFO] Konsola gotowa — uruchom instancję aby zobaczyć logi.
+          <p className="text-purple-400/60 italic text-center py-8">
+            Konsola gotowa — uruchom instancję aby zobaczyć logi.
           </p>
         ) : filteredLogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-[#555]">
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/50">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -327,15 +340,15 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               <div
                 key={`${line.timestamp}-${i}`}
                 className={cn(
-                  "whitespace-pre-wrap break-all hover:bg-white/[0.03] rounded px-0.5 transition-colors",
+                  "whitespace-pre-wrap break-all hover:bg-white/[0.03] rounded px-0.5 transition-colors py-px",
                   getLineColor(line),
                   line.stream === "stderr" && "bg-red-900/10",
                 )}
               >
                 {prefix ? (
                   <>
-                    <span className="text-[#888]">{prefix}</span>
-                    <span className="text-[#666]">: </span>
+                    <span className="text-muted-foreground/60">{prefix}</span>
+                    <span className="text-muted-foreground/40">: </span>
                     <span>{body}</span>
                   </>
                 ) : (
@@ -346,7 +359,22 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
           })
         )}
         {logs.length > 0 && (
-          <span className="text-[#6A9955] mt-1 block">$ _</span>
+          <span className="text-purple-400/60 mt-1 block">$ _</span>
+        )}
+
+        {/* New logs indicator when auto-scroll is off */}
+        {!autoScroll && !hasFilters && filteredLogs.length > 0 && (
+          <button
+            onClick={() => {
+              setAutoScroll(true);
+              if (scrollRef.current) {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+              }
+            }}
+            className="sticky bottom-2 left-1/2 -translate-x-1/2 mt-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px] font-medium hover:bg-purple-500/30 transition-all shadow-lg backdrop-blur-sm"
+          >
+            ⬇ Nowe logi — kliknij, aby przewinąć
+          </button>
         )}
       </div>
     </div>
