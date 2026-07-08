@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useMods } from "@/hooks/useMods";
 import { useModIcons } from "@/hooks/useModIcons";
 import { useModUpdates } from "@/hooks/useModUpdates";
@@ -30,6 +30,8 @@ function cleanSearchQuery(name: string): string {
 interface ModListProps {
   instanceName: string;
   instanceMcVersion?: string;
+  /** Called when mod updates availability changes (for badge on tab) */
+  onUpdatesFound?: (found: boolean) => void;
 }
 
 // ─── ModCard ────────────────────────────────────────────────────────
@@ -230,7 +232,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
 
 // ─── Main ModList Component ────────────────────────────────────────
 
-function ModList({ instanceName, instanceMcVersion }: ModListProps) {
+function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListProps) {
   const { mods, loading, error, toggle, remove, refresh } = useMods(instanceName);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -274,6 +276,11 @@ function ModList({ instanceName, instanceMcVersion }: ModListProps) {
     mcVersion: instanceMcVersion,
     autoCheckInterval: 5 * 60 * 1000,
   });
+
+  // Notify parent when update availability changes
+  useEffect(() => {
+    onUpdatesFound?.(hasUpdates);
+  }, [hasUpdates, onUpdatesFound]);
 
   // Build a map of fileName → ModUpdate for quick lookup
   const updateMap = new Map<string, ModUpdate>();

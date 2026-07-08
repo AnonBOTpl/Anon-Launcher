@@ -46,6 +46,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
   const [instanceMcVersion, setInstanceMcVersion] = useState<string | undefined>(undefined);
   const [instanceLoader, setInstanceLoader] = useState<string | undefined>(undefined);
   const [irisInstalled, setIrisInstalled] = useState<boolean | undefined>(undefined);
+  const [modUpdatesFound, setModUpdatesFound] = useState(false);
 
   // Read instance manifest to get MC version and loader type
   useEffect(() => {
@@ -164,7 +165,11 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
             {instanceName ? (
-              <ModList instanceName={instanceName} instanceMcVersion={instanceMcVersion} />
+              <ModList
+                instanceName={instanceName}
+                instanceMcVersion={instanceMcVersion}
+                onUpdatesFound={setModUpdatesFound}
+              />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Wybierz instancję, aby zarządzać modami.
@@ -265,6 +270,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
         {visibleTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const showBadge = tab.id === "crash" && hasNewCrash;
+          const showModBadge = tab.id === "mody" && modUpdatesFound;
           return (
             <button
               key={tab.id}
@@ -286,6 +292,9 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
                 {tab.label}
                 {showBadge && (
                   <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+                {showModBadge && (
+                  <span className="flex h-2 w-2 rounded-full bg-amber-400" />
                 )}
               </span>
               {/* Active indicator line */}
