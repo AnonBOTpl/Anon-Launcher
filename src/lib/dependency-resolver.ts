@@ -27,25 +27,38 @@ export async function checkModDependencies(
     return { dependencies: [], circularDetected: false, hasMissing: false, hasConflicts: false };
   }
 
-  const statusMap = await checkInstalledStatus(
-    instanceName,
-    relevantDeps.map((d) => ({ projectId: d.project_id as string, type: d.dependency_type })),
-  );
-
-  // Resolve project names
+  // Resolve project names AND slugs (slugs needed for Rust matching)
   const projectIds = [...new Set(relevantDeps.map((d) => d.project_id as string))];
-  const nameResults = await Promise.all(projectIds.map((id) => resolveProjectMeta(id)));
-  const nameMap = new Map<string, { name: string; iconUrl: string | null }>();
+  const metaResults = await Promise.all(projectIds.map((id) => resolveProjectMeta(id)));
+
+  // Maps keyed by hash project_id
+  const slugMap = new Map<string, string | null>();
+  const metaMap = new Map<string, { name: string; iconUrl: string | null }>();
   for (let i = 0; i < projectIds.length; i++) {
-    if (nameResults[i]) {
-      nameMap.set(projectIds[i]!, nameResults[i]!);
+    const r = metaResults[i];
+    if (r) {
+      slugMap.set(projectIds[i]!, r.slug);
+      metaMap.set(projectIds[i]!, { name: r.name, iconUrl: r.iconUrl });
     }
   }
 
+  // Send SLUGS to Rust (Rust matches against registry's project_slug)
+  const statusMap = await checkInstalledStatus(
+    instanceName,
+    relevantDeps.map((d) => {
+      const hash = d.project_id!;
+      const slug = slugMap.get(hash);
+      return { projectId: slug ?? hash, type: d.dependency_type };
+    }),
+  );
+
+  // Build deps — look up status by slug, but keep project_id (hash) for identity
   const deps: DependencyInfo[] = relevantDeps.map((dep) => {
     const pid = dep.project_id!;
-    const status = statusMap.get(pid);
-    const meta = nameMap.get(pid);
+    const slug = slugMap.get(pid);
+    // Try to look up by slug first, then by hash (fallback)
+    const status = statusMap.get(slug ?? pid) ?? statusMap.get(pid);
+    const meta = metaMap.get(pid);
     return {
       projectId: pid,
       type: dep.dependency_type as DependencyInfo["type"],
@@ -127,17 +140,13 @@ async function checkInstalledStatus(
   }
 }
 
-/** Resolve a single version to get its project metadata (name, icon). */
+/** Resolve a single project to get its metadata (name, icon, slug).
+ *  Slug is critical: Rust backend matches installed mods by project_slug,
+ *  but Modrinth dependency API returns project_id (hash). We resolve it here. */
 async function resolveProjectMeta(
   projectId: string,
-): Promise<{ name: string; iconUrl: string | null } | null> {
+): Promise<{ name: string; iconUrl: string | null; slug: string | null } | null> {
   try {
-    // Try fetching versions to get project info from version data
-    // The Modrinth API doesn't have a project-by-ID endpoint without slug,
-    // so we fetch the most recent version which includes project_id
-    // Actually, we can use the API: GET /v2/project/{id} or we need to
-    // use the search. Let's fetch from versions endpoint.
-    // Alternative: use GET https://api.modrinth.com/v2/project/{id}
     const response = await fetch(
       `https://api.modrinth.com/v2/project/${encodeURIComponent(projectId)}`,
       { signal: AbortSignal.timeout(5000) },
@@ -147,9 +156,10 @@ async function resolveProjectMeta(
     return {
       name: data.title || projectId,
       iconUrl: data.icon_url || null,
+      slug: data.slug || null,
     };
   } catch {
-    return { name: projectId, iconUrl: null };
+    return { name: projectId, iconUrl: null, slug: null };
   }
 }
 
@@ -180,28 +190,36 @@ export async function resolveDependencies(
     return { dependencies: [], circularDetected: false, hasMissing: false, hasConflicts: false };
   }
 
-  // Check which are installed
-  const statusMap = await checkInstalledStatus(
-    instanceName,
-    relevantDeps.map((d) => ({ projectId: d.project_id as string, type: d.dependency_type })),
-  );
-
-  // Resolve project names in parallel
+  // Resolve project names AND slugs (slugs needed for Rust matching)
   const projectIds = [...new Set(relevantDeps.map((d) => d.project_id as string))];
-  const namePromises = projectIds.map((id) => resolveProjectMeta(id));
-  const nameResults = await Promise.all(namePromises);
-  const nameMap = new Map<string, { name: string; iconUrl: string | null }>();
+  const metaResults = await Promise.all(projectIds.map((id) => resolveProjectMeta(id)));
+
+  const slugMap = new Map<string, string | null>();
+  const metaMap = new Map<string, { name: string; iconUrl: string | null }>();
   for (let i = 0; i < projectIds.length; i++) {
-    if (nameResults[i]) {
-      nameMap.set(projectIds[i]!, nameResults[i]!);
+    const r = metaResults[i];
+    if (r) {
+      slugMap.set(projectIds[i]!, r.slug);
+      metaMap.set(projectIds[i]!, { name: r.name, iconUrl: r.iconUrl });
     }
   }
+
+  // Check installed — send SLUGS to Rust (matches against project_slug in registry)
+  const statusMap = await checkInstalledStatus(
+    instanceName,
+    relevantDeps.map((d) => {
+      const hash = d.project_id!;
+      const slug = slugMap.get(hash);
+      return { projectId: slug ?? hash, type: d.dependency_type };
+    }),
+  );
 
   // Process each dependency
   for (const dep of relevantDeps) {
     const pid = dep.project_id!;
-    const status = statusMap.get(pid);
-    const meta = nameMap.get(pid);
+    const slug = slugMap.get(pid);
+    const status = statusMap.get(slug ?? pid) ?? statusMap.get(pid);
+    const meta = metaMap.get(pid);
 
     // Cycle detection
     if (visited.has(pid)) {

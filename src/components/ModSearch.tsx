@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useModSearch } from "@/hooks/useModSearch";
 import { getProject, getProjectVersions, formatDownloads } from "@/lib/modrinth";
+import { checkModDependencies } from "@/lib/dependency-resolver";
+import * as modApi from "@/lib/mod-installer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import MissingDepsWarning from "@/components/MissingDepsWarning";
 import type { ModrinthSearchHit, ModrinthProject, ModrinthVersion } from "@/types/modrinth";
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -15,18 +18,65 @@ function getLoaderColor(loader: string): string {
   return loader === "fabric" ? "text-emerald-400" : "text-muted-foreground";
 }
 
+// ─── HTML Sanitizer ─────────────────────────────────────────────────
+
+/**
+ * Basic HTML sanitizer — zezwala tylko na bezpieczne tagi formatujące.
+ * Modrinth API zwraca body jako HTML (z Modrinth Flavored Markdown).
+ */
+function sanitizeHtml(html: string): string {
+  const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(html);
+  if (!hasHtmlTags) {
+    return html
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n\n/g, "</p><p>")
+      .replace(/\n/g, "<br>");
+  }
+
+  const allowlist = [
+    "p", "br", "hr",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li",
+    "strong", "em", "b", "i", "u", "s",
+    "a",
+    "pre", "code", "blockquote",
+    "table", "thead", "tbody", "tr", "th", "td",
+    "img",
+    "div", "span",
+    "sub", "sup",
+  ];
+
+  let cleaned = html;
+  cleaned = cleaned.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  cleaned = cleaned.replace(
+    /(href|src)\s*=\s*(?:"(?!https?:\/\/|\/|#)[^"]*"|'(?!https?:\/\/|\/|#)[^']*')/gi,
+    "$1=''"
+  );
+  cleaned = cleaned.replace(/href\s*=\s*"\s*javascript:[^"]*"/gi, 'href=""');
+  cleaned = cleaned.replace(/href\s*=\s*'\s*javascript:[^']*'/gi, "href=''");
+  cleaned = cleaned.replace(/<\/?\s*([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tagName) => {
+    const lower = tagName.toLowerCase();
+    if (allowlist.includes(lower)) return match;
+    return "";
+  });
+
+  return cleaned;
+}
+
 // ─── ModDetails Panel ──────────────────────────────────────────────
 
 interface ModDetailsProps {
   slug: string;
+  instanceName: string;
   mcVersion?: string;
   onBack: () => void;
   isInstalled?: boolean;
-  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null, dependencies?: ModrinthVersion["dependencies"]) => Promise<void>;
-  onUninstall?: () => Promise<void>;
+  onUpdated?: () => void;
 }
 
-function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninstall }: ModDetailsProps) {
+function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpdated }: ModDetailsProps) {
   const [project, setProject] = useState<ModrinthProject | null>(null);
   const [versions, setVersions] = useState<ModrinthVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +84,29 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
   const [showFullBody, setShowFullBody] = useState(false);
   const [uninstalling, setUninstalling] = useState(false);
   const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+
+  // Dependency panel state
+  const [depState, setDepState] = useState<{
+    visible: boolean;
+    loading: boolean;
+    installing: boolean;
+    deps: any[];
+    hasMissing: boolean;
+    hasConflicts: boolean;
+  }>({ visible: false, loading: false, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+
+  // Scroll to top of description when expanding
+  const handleToggleDescription = () => {
+    setShowFullBody((prev) => {
+      if (!prev) {
+        requestAnimationFrame(() => {
+          descriptionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+      return !prev;
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -64,13 +137,167 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
 
     load();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [slug, mcVersion]);
 
-  // Reset selected version when versions change (new slug)
-  // IMPORTANT: All hooks must be before early returns!
   useEffect(() => {
     setSelectedVersionIdx(0);
   }, [versions]);
+
+  // ─── Compute selectedVersion (safe to call before early returns) ──
+  const selectedVersion = versions[selectedVersionIdx] ?? versions.find(
+    (v) => v.version_type === "release",
+  ) ?? versions[0];
+
+  // ─── Install flow hooks (MUST be before early returns) ─────────
+
+  const handleInstallSelected = useCallback(async () => {
+    if (!selectedVersion) return;
+    const primaryFile = selectedVersion.files.find((f) => f.primary) ?? selectedVersion.files[0];
+    if (!primaryFile) return;
+
+    const projectVal = project;
+    if (!projectVal) return;
+
+    const deps = selectedVersion.dependencies;
+    if (!deps || deps.length === 0) {
+      try {
+        await modApi.installMod(
+          instanceName,
+          selectedVersion.id,
+          selectedVersion.version_number,
+          primaryFile.url,
+          primaryFile.filename,
+          projectVal.title,
+          projectVal.slug,
+          projectVal.icon_url,
+        );
+        onUpdated?.();
+      } catch (err) {
+        console.error("Install failed:", err);
+      }
+      return;
+    }
+
+    setDepState({ visible: true, loading: true, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+    try {
+      const result = await checkModDependencies(instanceName, deps);
+      const hasOptionalDeps = result.dependencies.some((d) => d.type === "optional" && !d.installed);
+
+      if (!result.hasMissing && !result.hasConflicts && !hasOptionalDeps) {
+        try {
+          await modApi.installMod(
+            instanceName,
+            selectedVersion.id,
+            selectedVersion.version_number,
+            primaryFile.url,
+            primaryFile.filename,
+            projectVal.title,
+            projectVal.slug,
+            projectVal.icon_url,
+          );
+          setDepState({ visible: false, loading: false, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+          onUpdated?.();
+        } catch (err) {
+          console.error("Install failed:", err);
+          setDepState((prev) => ({ ...prev, visible: false, loading: false }));
+        }
+        return;
+      }
+
+      setDepState({
+        visible: true,
+        loading: false,
+        installing: false,
+        deps: result.dependencies,
+        hasMissing: result.hasMissing,
+        hasConflicts: result.hasConflicts,
+      });
+    } catch {
+      setDepState({ visible: false, loading: false, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+      try {
+        await modApi.installMod(
+          instanceName,
+          selectedVersion.id,
+          selectedVersion.version_number,
+          primaryFile.url,
+          primaryFile.filename,
+          projectVal.title,
+          projectVal.slug,
+          projectVal.icon_url,
+        );
+        onUpdated?.();
+      } catch (err) {
+        console.error("Install failed:", err);
+      }
+    }
+  }, [selectedVersion, instanceName, project, onUpdated, depState.deps]);
+
+  const handleInstallDeps = useCallback(async (selectedOptionalIds: string[]) => {
+    const primaryFile = selectedVersion?.files.find((f) => f.primary) ?? selectedVersion?.files[0];
+    if (!selectedVersion || !primaryFile) return;
+
+    const projectVal = project;
+    if (!projectVal) return;
+
+    setDepState((prev) => ({ ...prev, installing: true }));
+    try {
+      const depsToInstall = depState.deps.filter(
+        (d: any) =>
+          !d.installed &&
+          d.projectId &&
+          (d.type === "required" ||
+            (d.type === "optional" && selectedOptionalIds.includes(d.projectId))),
+      );
+
+      for (const dep of depsToInstall) {
+        try {
+          const depProject = await getProject(dep.projectId);
+          const depVersions = await getProjectVersions(depProject.slug, {
+            loaders: ["fabric"],
+            gameVersions: mcVersion ? [mcVersion] : undefined,
+          });
+          if (depVersions.length === 0) continue;
+          const depVersion = (depVersions.find((v: any) => v.version_type === "release") ?? depVersions[0])!;
+          const depFile = depVersion.files.find((f: any) => f.primary) ?? depVersion.files[0];
+          if (!depFile) continue;
+
+          await modApi.installMod(
+            instanceName,
+            depVersion.id,
+            depVersion.version_number,
+            depFile.url,
+            depFile.filename,
+            depProject.title,
+            depProject.slug,
+            depProject.icon_url,
+          );
+        } catch (depErr) {
+          console.error("Failed to install dependency:", depErr);
+        }
+      }
+
+      await modApi.installMod(
+        instanceName,
+        selectedVersion.id,
+        selectedVersion.version_number,
+        primaryFile.url,
+        primaryFile.filename,
+        projectVal.title,
+        projectVal.slug,
+        projectVal.icon_url,
+      );
+
+      setDepState({ visible: false, loading: false, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+      onUpdated?.();
+    } catch (err) {
+      console.error("Install failed:", err);
+      setDepState((prev) => ({ ...prev, installing: false }));
+    }
+  }, [selectedVersion, depState.deps, instanceName, mcVersion, project, onUpdated]);
+
+  const handleCancelDeps = useCallback(() => {
+    setDepState({ visible: false, loading: false, installing: false, deps: [], hasMissing: false, hasConflicts: false });
+  }, []);
 
   if (loading) {
     return (
@@ -88,30 +315,6 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
       </div>
     );
   }
-
-  // Selected version from dropdown
-  const selectedVersion = versions[selectedVersionIdx] ?? versions.find(
-    (v) => v.version_type === "release",
-  ) ?? versions[0];
-
-  // Install the currently selected version
-  const handleInstallSelected = () => {
-    if (onInstall && selectedVersion) {
-      const primaryFile = selectedVersion.files.find((f) => f.primary) ?? selectedVersion.files[0];
-      if (primaryFile) {
-        onInstall(
-          selectedVersion.id,
-          selectedVersion.version_number,
-          primaryFile.url,
-          primaryFile.filename,
-          project.title,
-          project.slug,
-          project.icon_url,
-          selectedVersion.dependencies,
-        );
-      }
-    }
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -175,37 +378,42 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
       </div>
 
       {/* Description */}
-      <div className="rounded-lg border border-border/50 bg-card/50 p-4">
+      <div ref={descriptionRef} className="rounded-lg border border-border/50 bg-card/50 p-4 overflow-hidden">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opis</h3>
+          {showFullBody && project.body.length > 500 && (
+            <button
+              onClick={() => setShowFullBody(false)}
+              className="text-xs text-purple-400 hover:text-purple-300 transition-colors shrink-0 ml-2"
+            >
+              Pokaż mniej ↑
+            </button>
+          )}
         </div>
         <div
           className={cn(
-            "prose prose-sm prose-invert max-w-none text-sm text-muted-foreground",
+            "prose prose-sm prose-invert max-w-full text-sm text-muted-foreground description-render",
             !showFullBody && "line-clamp-6",
           )}
-        >
-          {/* Strip HTML tags for a simple view */}
-          {project.body.replace(/<[^>]*>/g, "")}
-        </div>
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(project.body) }}
+        />
         {project.body.length > 500 && (
           <button
-            onClick={() => setShowFullBody(!showFullBody)}
+            onClick={handleToggleDescription}
             className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
           >
-            {showFullBody ? "Pokaż mniej" : "Pokaż więcej"}
+            {showFullBody ? "Pokaż mniej ↓" : "Pokaż więcej ↓"}
           </button>
         )}
       </div>
 
       {/* Select version + install */}
       {selectedVersion && (
-        <div className="rounded-lg border border-border/50 bg-card/50 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <div className="rounded-lg border border-border/50 bg-card/50 p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Wybierz wersję
           </h3>
           <div className="flex items-center gap-3">
-            {/* Version dropdown */}
             <select
               value={selectedVersionIdx}
               onChange={(e) => setSelectedVersionIdx(Number(e.target.value))}
@@ -220,21 +428,22 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
               ))}
             </select>
 
-            {/* Install / Uninstall button */}
             {isInstalled ? (
               <Button
                 size="sm"
                 variant="destructive"
                 onClick={async () => {
-                  if (!onUninstall) return;
                   setUninstalling(true);
                   try {
-                    await onUninstall();
+                    await modApi.removeMod(instanceName, `${project.slug}.jar`);
+                    onUpdated?.();
+                  } catch (err) {
+                    console.error("Uninstall failed:", err);
                   } finally {
                     setUninstalling(false);
                   }
                 }}
-                disabled={!onUninstall || uninstalling}
+                disabled={uninstalling}
                 className="shrink-0"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
@@ -246,21 +455,26 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
               <Button
                 size="sm"
                 onClick={handleInstallSelected}
-                disabled={!onInstall || !selectedVersion}
+                disabled={!selectedVersion || depState.loading || depState.installing}
                 className="shrink-0 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Zainstaluj
+                {depState.loading || depState.installing ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Zainstaluj
+                  </>
+                )}
               </Button>
             )}
           </div>
-          {/* Selected version details */}
           {selectedVersion && selectedVersionIdx !== undefined && (
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               <span>{selectedVersion.version_number}</span>
               <span>{selectedVersion.loaders.join(", ")}</span>
               <span>{selectedVersion.game_versions.join(", ")}</span>
@@ -272,11 +486,26 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
               )}
             </div>
           )}
+
+          {/* Inline dependency panel — appears right here, no modal! */}
+          {depState.visible && (
+            <MissingDepsWarning
+              dependencies={depState.deps}
+              hasMissing={depState.hasMissing}
+              hasConflicts={depState.hasConflicts}
+              circularDetected={false}
+              loading={depState.loading}
+              installing={depState.installing}
+              modName={project.title}
+              onInstallDeps={handleInstallDeps}
+              onCancel={handleCancelDeps}
+            />
+          )}
         </div>
       )}
 
-      {/* Dependencies */}
-      {selectedVersion && selectedVersion.dependencies.length > 0 && (
+      {/* Dependencies overview (read-only) */}
+      {selectedVersion && selectedVersion.dependencies.length > 0 && !depState.visible && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Zależności
@@ -331,7 +560,6 @@ function ModDetails({ slug, mcVersion, onBack, isInstalled, onInstall, onUninsta
 
       {/* Links */}
       <div className="flex flex-wrap gap-2">
-        {/* Modrinth page — always available */}
         <a
           href={`https://modrinth.com/mod/${project.slug}`}
           target="_blank"
@@ -382,7 +610,6 @@ interface ModSearchResultProps {
 }
 
 function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
-  // Determine main loader from categories
   const mainLoader = hit.categories.includes("fabric") ? "fabric" : null;
 
   return (
@@ -390,7 +617,6 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
       onClick={() => onSelect(hit.slug)}
       className="flex w-full items-start gap-3 rounded-xl border border-border/50 bg-card/50 p-3 text-left transition-all hover:border-purple-500/30 hover:bg-purple-500/5 hover:shadow-sm hover:shadow-purple-500/5"
     >
-      {/* Icon */}
       {hit.icon_url ? (
         <img
           src={hit.icon_url}
@@ -405,8 +631,6 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
           </span>
         </div>
       )}
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-sm font-medium truncate">{hit.title}</h3>
@@ -434,31 +658,14 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
           {hit.versions.slice(0, 3).map((v) => (
-            <span key={v} className="rounded bg-muted/80 px-1 py-0.5 text-[9px] text-muted-foreground">
-              {v}
-            </span>
+            <span key={v} className="rounded bg-muted/80 px-1 py-0.5 text-[9px] text-muted-foreground">{v}</span>
           ))}
           {hit.versions.length > 3 && (
-            <span className="text-[9px] text-muted-foreground">
-              +{hit.versions.length - 3}
-            </span>
+            <span className="text-[9px] text-muted-foreground">+{hit.versions.length - 3}</span>
           )}
         </div>
       </div>
-
-      {/* Chevron */}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="mt-2 shrink-0 text-muted-foreground"
-      >
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-2 shrink-0 text-muted-foreground">
         <path d="m9 18 6-6-6-6" />
       </svg>
     </button>
@@ -516,12 +723,9 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Fabric badge — always Fabric */}
       <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 ring-1 ring-emerald-500/20">
         Fabric
       </span>
-
-      {/* MC version filter */}
       {showMcInput ? (
         <div className="flex items-center gap-1">
           <input
@@ -540,16 +744,12 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
           onClick={() => setShowMcInput(true)}
           className={cn(
             "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-            mcVersion
-              ? "bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/30"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            mcVersion ? "bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/30" : "text-muted-foreground hover:text-foreground hover:bg-muted",
           )}
         >
           {mcVersion ? `MC ${mcVersion}` : "MC"}
         </button>
       )}
-
-      {/* Category dropdown */}
       <select
         value={category ?? ""}
         onChange={(e) => onCategoryChange(e.target.value || undefined)}
@@ -559,8 +759,6 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
           <option key={cat.id} value={cat.id}>{cat.label}</option>
         ))}
       </select>
-
-      {/* Sort dropdown */}
       <div className="ml-auto">
         <select
           value={sort}
@@ -579,14 +777,14 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
 // ─── Main ModSearch Component ─────────────────────────────────────
 
 interface ModSearchProps {
+  instanceName: string;
   instanceMcVersion?: string;
   installedMods?: { name: string; fileName: string }[];
   initialQuery?: string;
-  onInstall?: (versionId: string, versionNumber: string, downloadUrl: string, fileName: string, modName: string, projectSlug?: string, iconUrl?: string | null, dependencies?: ModrinthVersion["dependencies"]) => Promise<void>;
-  onUninstall?: (fileName: string) => Promise<void>;
+  onUpdated?: () => void;
 }
 
-function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, onUninstall }: ModSearchProps) {
+function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuery, onUpdated }: ModSearchProps) {
   const {
     results,
     loading,
@@ -602,21 +800,18 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Pre-fill search query from initialQuery prop
   useEffect(() => {
     if (initialQuery) {
       setFilter("query", initialQuery);
     }
   }, [initialQuery, setFilter]);
 
-  // Scroll to top when opening mod details
   useEffect(() => {
     if (selectedSlug) {
       searchContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [selectedSlug]);
 
-  // Infinite scroll
   useEffect(() => {
     if (!hasMore || loading) return;
     const sentinel = sentinelRef.current;
@@ -635,27 +830,18 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
     return () => observer.disconnect();
   }, [hasMore, loading, loadMore]);
 
-  // Determine if selected mod is installed
   const selectedHit = results.find((h) => h.slug === selectedSlug);
-  const installedMod = selectedHit
-    ? installedMods?.find((m) => m.name === selectedHit.title)
-    : undefined;
 
-  // Detail view
   if (selectedSlug) {
     return (
       <div>
         <ModDetails
           slug={selectedSlug}
+          instanceName={instanceName}
           mcVersion={instanceMcVersion}
-          isInstalled={!!installedMod}
+          isInstalled={installedMods?.some((m) => m.name === selectedHit?.title)}
           onBack={() => setSelectedSlug(null)}
-          onInstall={onInstall}
-          onUninstall={
-            installedMod && onUninstall
-              ? () => onUninstall(installedMod.fileName)
-              : undefined
-          }
+          onUpdated={onUpdated}
         />
       </div>
     );
@@ -663,23 +849,10 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
 
   return (
     <div className="space-y-4" ref={searchContainerRef}>
-      {/* Search bar */}
       <div className="relative">
         <div className="flex items-center gap-2 rounded-xl border border-input bg-background px-3 py-2.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0 text-muted-foreground"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted-foreground">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
             type="text"
@@ -693,15 +866,12 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
               onClick={() => setFilter("query", "")}
               className="shrink-0 rounded p-0.5 text-muted-foreground/60 hover:text-foreground transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
             </button>
           )}
         </div>
       </div>
 
-      {/* Filters */}
       <FilterBar
         mcVersion={filters.mcVersion}
         category={filters.category}
@@ -711,7 +881,6 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         onSortChange={(s) => setFilter("sort", s as "relevance" | "downloads" | "follows" | "newest" | "updated")}
       />
 
-      {/* Results info */}
       {!loading && !error && results.length > 0 && (
         <p className="text-xs text-muted-foreground">
           Znaleziono {totalHits} modów
@@ -719,7 +888,6 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         </p>
       )}
 
-      {/* Results */}
       <div className="space-y-2">
         {results.map((hit) => (
           <ModSearchResult
@@ -731,10 +899,8 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         ))}
       </div>
 
-      {/* Load more sentinel */}
       {hasMore && <div ref={sentinelRef} className="h-4" />}
 
-      {/* Loading spinner */}
       {loading && (
         <div className="flex items-center justify-center py-8">
           <div className="flex flex-col items-center gap-3">
@@ -744,7 +910,6 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
           <div className="flex items-start gap-2">
@@ -762,7 +927,6 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && !error && results.length === 0 && filters.query && (
         <div className="flex flex-col items-center gap-3 py-12">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
@@ -773,7 +937,6 @@ function ModSearch({ instanceMcVersion, installedMods, initialQuery, onInstall, 
         </div>
       )}
 
-      {/* Initial empty state */}
       {!loading && !error && !filters.query && results.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-12">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">

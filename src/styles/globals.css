@@ -240,4 +240,51 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* ---- Description renderer (Modrinth body HTML) ---- */
+  .description-render {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-x: hidden;
+  }
+
+  .description-render pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .description-render code {
+    word-break: break-all;
+  }
+
+  .description-render img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+  }
+
+  .description-render a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .description-render a:hover {
+    opacity: 0.8;
+  }
+
+  .description-render table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .description-render th,
+  .description-render td {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid hsl(var(--border));
+  }
 }

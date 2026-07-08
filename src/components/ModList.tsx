@@ -1,19 +1,14 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMods } from "@/hooks/useMods";
 import { useModIcons } from "@/hooks/useModIcons";
 import { useModUpdates } from "@/hooks/useModUpdates";
 import { updateMod as updateModApi } from "@/lib/mod-updater";
-import * as modApi from "@/lib/mod-installer";
-import { checkModDependencies, type DependencyInfo } from "@/lib/dependency-resolver";
-import { getProject, getProjectVersions } from "@/lib/modrinth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ModSearch from "@/components/ModSearch";
-import MissingDepsWarning from "@/components/MissingDepsWarning";
 import * as snapshotApi from "@/lib/snapshot";
 import type { InstalledMod } from "@/lib/mod-installer";
 import type { ModUpdate } from "@/lib/mod-updater";
-import type { ModrinthVersion } from "@/types/modrinth";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -238,30 +233,10 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
   const iconMap = useModIcons(mods);
 
-  // Dependency checking state
-  const [depDialogOpen, setDepDialogOpen] = useState(false);
-  const [depInfo, setDepInfo] = useState<DependencyInfo[]>([]);
-  const depInfoRef = useRef<DependencyInfo[]>([]);
-  const [depResolving, setDepResolving] = useState(false);
-  const [depHasMissing, setDepHasMissing] = useState(false);
-  const [depHasConflicts, setDepHasConflicts] = useState(false);
-  const [depCircular, setDepCircular] = useState(false);
-  const [depModName, setDepModName] = useState("");
-  const [depInstalling, setDepInstalling] = useState(false);
-  // Snapshot before update dialog
+  // Snapshot before update dialog — null means closed
   const [snapshotBeforeUpdate, setSnapshotBeforeUpdate] = useState<{
     mode: "full" | "metadata" | null;
     creating: boolean;
-  }>({ mode: null, creating: false });
-  // Pending install params saved while dep dialog is shown
-  const [pendingInstall, setPendingInstall] = useState<{
-    versionId: string;
-    versionNumber: string;
-    downloadUrl: string;
-    fileName: string;
-    modName: string;
-    projectSlug?: string;
-    iconUrl?: string | null;
   } | null>(null);
 
   const {
@@ -313,9 +288,12 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
     [instanceName, refresh],
   );
 
-  const handleUpdateAll = useCallback(async () => {
-    // Show snapshot dialog before updating
+  const handleUpdateAll = useCallback(async () => {    // Show snapshot dialog before updating
     setSnapshotBeforeUpdate({ mode: null, creating: false });
+  }, []);
+
+  const handleCloseSnapshot = useCallback(() => {
+    setSnapshotBeforeUpdate(null);
   }, []);
 
   const handleConfirmUpdateAll = useCallback(
@@ -328,7 +306,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
           console.error("Failed to create snapshot before update:", err);
         }
       }
-      setSnapshotBeforeUpdate({ mode: null, creating: false });
+      setSnapshotBeforeUpdate(null);
 
       for (const update of updates) {
         try {
@@ -350,137 +328,8 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
     [instanceName, refresh, updates],
   );
 
-  // ─── Dependency checking before install ─────────────────────────
-
-  const handleInstallWithDeps = useCallback(
-    async (
-      versionId: string,
-      versionNumber: string,
-      downloadUrl: string,
-      fileName: string,
-      modName: string,
-      projectSlug?: string,
-      iconUrl?: string | null,
-      dependencies?: ModrinthVersion["dependencies"],
-    ) => {
-      // If no dependencies, install directly
-      if (!dependencies || dependencies.length === 0) {
-        try {
-          await modApi.installMod(instanceName, versionId, versionNumber, downloadUrl, fileName, modName, projectSlug, iconUrl);
-          refresh();
-          closeSearch();
-        } catch (err) {
-          console.error("Install failed:", err);
-        }
-        return;
-      }
-
-      // Save pending install params and resolve deps
-      setPendingInstall({ versionId, versionNumber, downloadUrl, fileName, modName, projectSlug, iconUrl });
-      setDepModName(modName);
-      setDepResolving(true);
-      setDepDialogOpen(true);
-
-      try {
-        // Check which deps are installed via Rust backend
-        const result = await checkModDependencies(instanceName, dependencies);
-        setDepInfo(result.dependencies);
-        depInfoRef.current = result.dependencies;
-        setDepHasMissing(result.hasMissing);
-        setDepHasConflicts(result.hasConflicts);
-        setDepCircular(false);
-      } catch {
-        setDepInfo([]);
-        setDepHasMissing(false);
-        setDepHasConflicts(false);
-      } finally {
-        setDepResolving(false);
-      }
-    },
-    [instanceName, refresh],
-  );
-
-  const handleDepsCancel = useCallback(() => {
-    setDepDialogOpen(false);
-    setPendingInstall(null);
-  }, []);
-
-  const handleInstallAnyway = useCallback(async () => {
-    if (!pendingInstall) return;
-
-    const pi = pendingInstall;
-    setPendingInstall(null);
-    setDepInstalling(true);
-
-    try {
-      // 1. Install missing required dependencies first
-      const missingDeps = depInfoRef.current.filter(
-        (d) => d.type === "required" && !d.installed && d.projectId,
-      );
-
-      for (const dep of missingDeps) {
-        try {
-          // Fetch project info (slug, title, icon)
-          const depProject = await getProject(dep.projectId);
-          // Fetch versions matching Fabric + instance MC version
-          const depVersions = await getProjectVersions(depProject.slug, {
-            loaders: ["fabric"],
-            gameVersions: instanceMcVersion ? [instanceMcVersion] : undefined,
-          });
-
-          if (depVersions.length === 0) {
-            console.warn("No matching version found for dependency:", dep.modName);
-            continue;
-          }
-
-          // Pick latest matching version (prefer release) — depVersions is non-empty at this point
-          const depVersion = (depVersions.find((v) => v.version_type === "release") ?? depVersions[0])!;
-          const depFile = depVersion.files.find((f) => f.primary) ?? depVersion.files[0];
-          if (!depFile) {
-            console.warn("No downloadable file for dependency:", dep.modName);
-            continue;
-          }
-
-          await modApi.installMod(
-            instanceName,
-            depVersion.id,
-            depVersion.version_number,
-            depFile.url,
-            depFile.filename,
-            depProject.title,
-            depProject.slug,
-            depProject.icon_url,
-          );
-          console.log(`Installed dependency: ${dep.modName} (${depVersion.version_number})`);
-        } catch (depErr) {
-          console.error(`Failed to install dependency ${dep.modName}:`, depErr);
-          // Continue with other deps and main mod
-        }
-      }
-
-      // 2. Install the main mod
-      await modApi.installMod(
-        instanceName,
-        pi.versionId,
-        pi.versionNumber,
-        pi.downloadUrl,
-        pi.fileName,
-        pi.modName,
-        pi.projectSlug,
-        pi.iconUrl,
-      );
-
-      // Close dialog AFTER everything is installed
-      setDepDialogOpen(false);
-      refresh();
-      closeSearch();
-    } catch (err) {
-      console.error("Install failed:", err);
-      setDepDialogOpen(false);
-    } finally {
-      setDepInstalling(false);
-    }
-  }, [instanceName, refresh, pendingInstall, instanceMcVersion]);
+  // ─── Search is now managed by ModSearch itself (including deps) ────
+  // ModList just provides instanceName and refresh callback
 
   const openSearch = (query?: string) => {
     setSearchQuery(query ? cleanSearchQuery(query) : undefined);
@@ -601,24 +450,15 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
         </div>
       )}
 
-      {/* Search panel (inline) */}
+      {/* Search panel (inline) — ModSearch handles deps & install internally */}
       {showSearch ? (
         <div className="rounded-xl border border-border/50 bg-card/50 p-4">
           <ModSearch
+            instanceName={instanceName}
             instanceMcVersion={instanceMcVersion}
             installedMods={mods.map(m => ({ name: m.name, fileName: m.fileName }))}
             initialQuery={searchQuery}
-            onInstall={async (versionId, versionNumber, downloadUrl, fileName, modName, projectSlug, iconUrl, dependencies) => {
-              await handleInstallWithDeps(versionId, versionNumber, downloadUrl, fileName, modName, projectSlug, iconUrl, dependencies);
-            }}
-            onUninstall={async (fileName) => {
-              try {
-                await modApi.removeMod(instanceName, fileName);
-                refresh();
-              } catch (err) {
-                console.error("Uninstall failed:", err);
-              }
-            }}
+            onUpdated={() => { refresh(); closeSearch(); }}
           />
         </div>
       ) : (
@@ -670,11 +510,11 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
         </>
       )}
 
-      {/* Snapshot before update dialog */}
-      {snapshotBeforeUpdate.mode === null && !snapshotBeforeUpdate.creating && hasUpdates && (
+      {/* Snapshot dialog — only when explicitly opened by "Aktualizuj wszystkie" */}
+      {snapshotBeforeUpdate && snapshotBeforeUpdate.mode === null && !snapshotBeforeUpdate.creating && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setSnapshotBeforeUpdate({ mode: null, creating: false })}
+          onClick={handleCloseSnapshot}
         >
           <div
             className="w-full max-w-sm rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-fade-in"
@@ -730,7 +570,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
       )}
 
       {/* Creating snapshot loading */}
-      {snapshotBeforeUpdate.creating && (
+      {snapshotBeforeUpdate && snapshotBeforeUpdate.creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-2xl animate-fade-in">
             <div className="flex flex-col items-center gap-3 py-4">
@@ -743,20 +583,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
         </div>
       )}
 
-      {/* Missing dependencies warning dialog */}
-      <MissingDepsWarning
-        open={depDialogOpen}
-        onOpenChange={setDepDialogOpen}
-        dependencies={depInfo}
-        hasMissing={depHasMissing}
-        hasConflicts={depHasConflicts}
-        circularDetected={depCircular}
-        loading={depResolving}
-        modName={depModName}
-        installing={depInstalling}
-        onInstallDeps={handleInstallAnyway}
-        onCancel={handleDepsCancel}
-      />
+      {/* MissingDepsWarning is now rendered inline inside ModSearch/ModDetails */}
     </div>
   );
 }

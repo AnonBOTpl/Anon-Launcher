@@ -574,6 +574,53 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 - `tsc --noEmit` ✅ (0 błędów)
 - `cargo build` ✅
 
+## 2026-07-08 — Fix opisu moda, wykrywanie zależności, inline panel deps + fix hooks crash
+
+### 📝 Opis moda — renderowanie HTML
+- **Problem**: `project.body.replace(/<[^>]*>/g, "")` stripował wszystkie tagi HTML, zostawiając surowy tekst rozciągający layout
+- **Fix**: `dangerouslySetInnerHTML` z sanitizerem (bezpieczne tagi: p, h1-h6, pre, code, img, a, table itp.)
+- CSS `.description-render` z `overflow-wrap: break-word`, `word-break: break-word`, `overflow-x: hidden`
+- Przykład: lista, kod, obrazki, linki działają poprawnie i nie rozciągają aplikacji
+
+### 🐛 Wykrywanie zależności — Fabric API już zainstalowane
+- **Problem**: Rust porównywał `project_slug` (np. `"fabric-api"`) z `project_id` (hash `"P7dR8Msh"`) — zawsze false!
+- **Fix**: Frontend resolve'uje `project_id` → `slug` przez API Modrinth przed wysłaniem do Rusta
+
+### 🎯 Inline panel zależności zamiast modala
+- Totalna przebudowa: zamiast `fixed` modala z overlayem, panel zależności rozwija się **inline** tuż pod przyciskiem "Zainstaluj"
+- Gdy wszystkie deps OK → zero pytań, mod instaluje się od razu
+- Gdy brakuje depów lub są opcjonalne → rozwija się panel z toggle (wymagane zawsze ON, opcjonalne przełącznik)
+- `MissingDepsWarning.tsx` przerobiony z fixed overlay na zwykły div w przepływie strony
+- `ModSearch.tsx` — samodzielne zarządzanie całym flow instalacji (instanceName prop, dependency checking)
+- `ModList.tsx` — uproszczony (~80 linii mniej stanu dialogu)
+
+### 🔘 Przełącznik opcjonalnych zależności
+- Toggle switch dla optionalnych depów w MissingDepsWarning
+- Wymagane: zawsze instalowane (czerwony badge)
+- Opcjonalne: przełącznik (bursztynowy toggle), domyślnie wyłączone
+- Stan resetuje się przy każdym otwarciu dialogu
+
+### 🔧 Fix "Rendered more hooks than during the previous render"
+- **Problem**: `useCallback` hooki (`handleInstallSelected`, `handleInstallDeps`, `handleCancelDeps`) były zadeklarowane **po** wczesnych returnach (`if (loading)`, `if (error || !project)`), co łamało Rules of Hooks
+- **Fix**: Przeniesiono wszystkie `useCallback` i `selectedVersion` przed early returny, z localnym capturem `projectVal` i guardami null
+
+### 📍 Pozostałe UX
+- Scroll to top opisu po rozwinięciu (scrollIntoView)
+- Przycisk 'Pokaż mniej' na górze i na dole opisu
+- Skip dialogu gdy wszystkie depy są już zainstalowane (instaluj od razu)
+- Zawsze przycisk 'Zainstaluj' w dialogu (nie 'OK' gdy wszystkie wymagane OK)
+- Jasniejsze tło przełącznika opcjonalnych (bg-muted-foreground/20 + ring)
+
+### Zmodyfikowane pliki
+- `src/components/ModSearch.tsx` — sanitizer HTML, scroll, inline deps, fix hooks order
+- `src/components/MissingDepsWarning.tsx` — przepisany na inline panel + optional toggle
+- `src/components/ModList.tsx` — uproszczony, usunięty dialog deps
+- `src/lib/dependency-resolver.ts` — fix project_id → slug resolution
+- `src/styles/globals.css` — dodane style .description-render
+
+### Build
+- `tsc --noEmit` ✅
+
 ### Status projektu
 
 #### ✅ Ukończone
@@ -585,15 +632,25 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 - [x] **TASK-06** — Klonowanie instancji
 - [x] **TASK-07** — Eksport i import ZIP
 - [x] **TASK-08** — Otwieranie folderu instancji
-- [x] **TASK-09** — Microsoft Device Code Flow (kod gotowy, czeka na Azure)
+- [x] **TASK-09** — Microsoft Device Code Flow
 - [x] **TASK-10** — Stronghold + zarządzanie kontami
 - [x] **TASK-11** — Moduł pobierania Java (Adoptium)
 - [x] **TASK-12** — Minecraft Core (wersje, biblioteki, launch)
 - [x] **TASK-13** — Uruchamianie Vanilla + Process Manager
 - [x] **TASK-14** — Fabric loader
+- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
+- [x] **TASK-20** — Instalacja modów
+- [x] **TASK-21** — Aktualizacja modów
+- [x] **TASK-22** — Wykrywanie zależności
+- [x] **TASK-23** — Snapshoty
+- [x] **TASK-24** — Przywracanie snapshotów
+- [x] **TASK-27** — Avatar 2D w profilu (AccountSwitcher)
 - [x] **TASK-30** — Usuwanie instancji
 - [x] **TASK-31** — Edycja ustawień instancji
 - [x] **TASK-32** — Widok instancji (layout z zakładkami)
+- [x] **TASK-33** — Backend: installacja resourcepacków/shaderów + .mrpack
+- [x] **TASK-34** — Frontend: tryb "Z modpacka" w CreateInstanceForm
+- [x] **TASK-35** — ContentList + ContentBrowser (resourcepacki, shadery)
 - [x] **TASK-DEV-AUTH** — Mock auth dla trybu developerskiego
 
 #### 🔄 W trakcie / Częściowo
@@ -603,14 +660,7 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 
 #### ❌ Do zrobienia
 - [ ] **TASK-15** — Tryb offline (cached session)
-- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
-- [x] **TASK-20** — Instalacja modów
-- [x] **TASK-21** — Aktualizacja modów
-- [x] **TASK-22** — Wykrywanie zależności
-- [x] **TASK-23** — Snapshoty
-- [x] **TASK-24** — Przywracanie snapshotów
 - [ ] **TASK-25** — Obsługa crash-reportów
-- [ ] **TASK-27** — Avatar 2D w zakładce Profil
 - [ ] **TASK-28c** — Toasty i notyfikacje
 - [ ] **TASK-29** — Testy końcowe
 
