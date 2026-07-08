@@ -28,7 +28,7 @@ const TABS: Tab[] = [
   { id: "shaders", label: "Shadery" },
   { id: "snapshoty", label: "Snapshoty" },
   { id: "logi", label: "Logi" },
-  { id: "profil", label: "Profil" },
+
 ];
 
 function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
@@ -206,14 +206,7 @@ function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
             )}
           </div>
         );
-      case "profil":
-        return (
-          <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
-            <p className="text-sm text-muted-foreground">
-              Profil gracza — zostanie zaimplementowany w TASK-27.
-            </p>
-          </div>
-        );
+
       default:
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">

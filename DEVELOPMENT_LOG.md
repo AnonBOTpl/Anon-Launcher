@@ -1128,3 +1128,37 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-07 (sesja 2) — Fix wyszukiwarki contentu + TASK-27: Avatar 2D w profilu
+
+### 🔥 Fix: Wyszukiwarka resourcepacków/shaderów pokazywała za mało wyników
+
+**Przyczyna:** `useModSearch.ts` zawsze dodawał facet `categories:fabric` do zapytania API Modrinth, nawet dla `projectType: "resourcepack"` lub `"shader"`. Resource packi i shaderpacki nie mają kategorii "fabric" (są niezależne od loadera), więc API zwracało tylko ~13 wyników dla paczek i 1 dla shaderów.
+
+**Fix:** Filtr loadera jest teraz pomijany gdy `projectType !== "mod"` — resource packi i shadery pokazują wszystkie dostępne wyniki z Modrintha.
+
+### TASK-27: Avatar 2D w profilu (AccountSwitcher)
+
+**Zmiana koncepcji:** Zamiast zakładki "Profil" w InstanceTabs (per-instancja), profil został przeniesiony do globalnego dialogu AccountSwitcher. Zakładka "Profil" usunięta z InstanceTabs.
+
+**Nowe pliki:**
+- `src/lib/minecraft-avatar.ts` — helper URL-i MC-Heads (`getAvatarUrl`, `getBodyUrl`, Steve fallback, `normalizeUuid`)
+- `src/hooks/useAvatar.ts` — React hook z preloadem, cache-bustingiem, obsługą błędów
+- `src/components/AvatarRenderer.tsx` — komponent renderujący skórkę (head + body) z loading/error/fallback
+
+**Zmodyfikowane:**
+- `src/components/AccountSwitcher.tsx` — **przebudowany**:
+  - Sidebar: avatar thumbnail (36px) z MC-Heads zamiast literki inicjału
+  - Dialog: górna sekcja z full body renderem (h-48), username, UUID (monospace), status online, przyciski Odśwież/Wyloguj
+  - Lista kont na dole z miniaturkami avatara (32px) — kliknięcie przełącza konto i odświeża profil
+  - Stan "niezalogowany" z ikoną i komunikatem
+- `src/components/InstanceTabs.tsx` — usunięta zakładka "Profil" (przeniesiona do AccountSwitcher)
+
+**Fix URL MC-Heads:**
+- Zmieniono format URL z `/body/{uuid}` na `/body/{uuid}/150.png` — dodano `.png` extension i rozmiar
+- `getBodyUrl()` przyjmuje teraz opcjonalny `size` (domyślnie 150)
+- Steve fallbacki zaktualizowane do tego samego formatu
+- `normalizeUuid()` — traktuje pusty string/null/undefined jako brak UUID (zamiast generować nieprawidłowe URL-e)
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
