@@ -661,13 +661,13 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 #### ❌ Do zrobienia
 - [ ] **TASK-15** — Tryb offline (cached session)
 - [ ] **TASK-25** — Obsługa crash-reportów
-- [ ] **TASK-28c** — Toasty i notyfikacje
 - [ ] **TASK-29** — Testy końcowe
 
 #### ❌ Anulowane
 - ~~**TASK-16** — Kolejka pobrań~~ (zbędne — background download + pasek postępu)
 - ~~**TASK-17** — Monitorowanie postępu~~ (zbędne — eventy `download:progress`)
 - ~~**TASK-18** — Pobieranie assetów i bibliotek~~ ✅ (zrealizowane w TASK-12)
+- ~~**TASK-28c** — Toasty i notyfikacje~~
 
 ## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
 
