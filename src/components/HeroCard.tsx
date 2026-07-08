@@ -47,7 +47,22 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
 
   return (
     <>
-      <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card/90 to-card/60 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/10 animate-fade-in">
+      <div className={cn(
+        "group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card/90 to-card/60 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/10 animate-fade-in",
+        launchStatus.type === "running"
+          ? "animate-running-glow border-purple-500/40"
+          : "border-border/50",
+      )}>
+        {/* Running indicator — pulsing dot in corner */}
+        {launchStatus.type === "running" && (
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 border border-emerald-500/20 z-10">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            <span className="text-[10px] font-medium text-emerald-400">Uruchomiona</span>
+          </div>
+        )}
         {/* Portal glow */}
         <div className="pointer-events-none absolute -inset-px animate-portal-pulse rounded-2xl opacity-50" />
 

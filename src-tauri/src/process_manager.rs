@@ -9,7 +9,7 @@ use tauri::{AppHandle, Emitter};
 
 /// Status of a running game instance
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum InstanceStatus {
     Idle,
     Launching,

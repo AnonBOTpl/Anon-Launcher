@@ -304,7 +304,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="overflow-y-auto font-mono text-xs leading-relaxed p-3 flex-1 min-h-0 bg-[#0A0A0F]"
+        className="overflow-y-auto font-mono text-xs leading-relaxed p-3 flex-1 min-h-0 bg-[#0A0A0F] custom-scrollbar"
       >
         {logs.length === 0 ? (
           <p className="text-purple-400/60 italic text-center py-8">

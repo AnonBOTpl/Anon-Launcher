@@ -83,6 +83,24 @@ function detectLevel(text: string): LogLevel {
 export function useLaunch(instanceName?: string): UseLaunchReturn {
   const [status, setStatus] = useState<LaunchStatus>({ type: "idle" });
   const [logs, setLogs] = useState<LogLine[]>([]);
+
+  // On mount, check if the process is still running (e.g. after navigating back)
+  useEffect(() => {
+    if (!instanceName) return;
+
+    invoke<{ type: string; pid?: number }>("get_instance_status", {
+      instanceName,
+    })
+      .then((result) => {
+        if (result.type === "running" && result.pid) {
+          setStatus({ type: "running", pid: result.pid });
+        }
+      })
+      .catch(() => {
+        // Silently ignore — keep default idle state
+      });
+  }, [instanceName]);
+
   const unlisteners = useRef<UnlistenFn[]>([]);
   // Bounded dedup buffer: track last N lines to catch stdout/stderr block duplicates
   // (chain() reads all stdout then all stderr → lines arrive in two separate blocks)

@@ -1259,9 +1259,9 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 #### ❌ Do zrobienia
 - [ ] **TASK-29** — Testy końcowe
 - [ ] **TASK-I18N** — Internacjonalizacja (i18next, EN domyślnie + PL)
-- [ ] **TASK-UI-POLISH** — Custom scrollbary, titlebar i ramka okna
 
 #### ❌ Anulowane / Pominięte
+- ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar i ramka okna~~
 - ~~**TASK-15** — Tryb offline (cached session)~~
 - ~~**TASK-16** — Kolejka pobrań~~ (zbędne — background download + pasek postępu)
 - ~~**TASK-17** — Monitorowanie postępu~~ (zbędne — eventy `download:progress`)
