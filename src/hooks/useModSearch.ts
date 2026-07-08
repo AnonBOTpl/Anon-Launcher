@@ -60,8 +60,8 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
         // Filter by project type
         facets.push([`project_type:${searchFilters.projectType ?? "mod"}`]);
 
-        // Filter by loader
-        if (searchFilters.loader) {
+        // Filter by loader (only for mods, not resourcepacks or shaders)
+        if (searchFilters.loader && searchFilters.projectType === "mod") {
           facets.push([`categories:${searchFilters.loader}`]);
         }
 
