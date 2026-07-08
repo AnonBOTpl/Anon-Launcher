@@ -30,6 +30,7 @@ flate2 = "1.1.9"
 sha2 = "0.10"
 base64 = "0.22"
 rand = "0.8"
+chrono = "0.4"
 
 # Stronghold uses scrypt which benefits from optimization
 [profile.dev.package.scrypt]

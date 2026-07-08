@@ -4,12 +4,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import type { InstanceManifest } from "@/types/instance";
 import type { LogLine } from "@/hooks/useLaunch";
+import { useCrashReports } from "@/hooks/useCrashReports";
+import { CrashReportList } from "@/components/CrashReportList";
 import ModList from "@/components/ModList";
 import ContentList from "@/components/ContentList";
 import SnapshotList from "@/components/SnapshotList";
 import { GameConsole } from "@/components/GameConsole";
 import * as modApi from "@/lib/mod-installer";
 import { getProject, getProjectVersions } from "@/lib/modrinth";
+
 
 interface Tab {
   id: string;
@@ -19,6 +22,10 @@ interface Tab {
 interface InstanceTabsProps {
   logs?: LogLine[];
   onClearLogs?: () => void;
+  /** Whether a new crash was detected (shows badge on Crash tab) */
+  hasNewCrash?: boolean;
+  /** Dismiss new crash indicator */
+  onDismissNewCrash?: () => void;
 }
 
 const TABS: Tab[] = [
@@ -28,10 +35,10 @@ const TABS: Tab[] = [
   { id: "shaders", label: "Shadery" },
   { id: "snapshoty", label: "Snapshoty" },
   { id: "logi", label: "Logi" },
-
+  { id: "crash", label: "Crash" },
 ];
 
-function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
+function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }: InstanceTabsProps) {
   const { id } = useParams<{ id: string }>();
   const instanceName = id ? decodeURIComponent(id) : null;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,6 +138,12 @@ function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
   }, [instanceName, instanceMcVersion, checkIris]);
 
   // Filter tabs by loader
+  // Crash reports hook (only when we have an instance name)
+  const crashReportsHook = useCrashReports(instanceName ?? undefined);
+
+  // When hasNewCrash changes from parent, sync to our dismiss
+  // (the parent sets hasNewCrash from the hook, we just display it)
+
   const visibleTabs = TABS.filter((tab) => {
     if (tab.id === "mody" && instanceLoader === "vanilla") return false;
     if (tab.id === "shaders" && instanceLoader === "vanilla") return false;
@@ -197,11 +210,38 @@ function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
       case "snapshoty":
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
-            {instanceName ? (
+                {instanceName ? (
               <SnapshotList instanceName={instanceName} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Wybierz instancję, aby zarządzać snapshotami.
+              </p>
+            )}
+          </div>
+        );
+
+      case "crash":
+        return (
+          <div className="rounded-2xl border border-border/50 bg-card/30 overflow-hidden backdrop-blur-sm">
+            {instanceName ? (
+              <CrashReportList
+                reports={crashReportsHook.reports}
+                loading={crashReportsHook.loading}
+                error={crashReportsHook.error}
+                selectedReport={crashReportsHook.selectedReport}
+                selectedContent={crashReportsHook.selectedContent}
+                contentLoading={crashReportsHook.contentLoading}
+                onSelect={crashReportsHook.selectReport}
+                onRefresh={crashReportsHook.refresh}
+                onDelete={crashReportsHook.remove}
+                onDeleteAll={crashReportsHook.removeAll}
+                onOpenFolder={() => {
+                  invoke("open_crash_reports_folder", { instanceName });
+                }}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Wybierz instancję, aby zobaczyć raporty awarii.
               </p>
             )}
           </div>
@@ -224,10 +264,17 @@ function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
       <div className="flex border-b border-border/50">
         {visibleTabs.map((tab) => {
           const isActive = activeTab === tab.id;
+          const showBadge = tab.id === "crash" && hasNewCrash;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                // Dismiss new crash badge when opening crash tab
+                if (tab.id === "crash" && onDismissNewCrash) {
+                  onDismissNewCrash();
+                }
+              }}
               className={cn(
                 "relative px-5 py-3 text-sm font-medium transition-colors",
                 isActive
@@ -235,7 +282,12 @@ function InstanceTabs({ logs = [], onClearLogs }: InstanceTabsProps) {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {tab.label}
+              <span className="flex items-center gap-1.5">
+                {tab.label}
+                {showBadge && (
+                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </span>
               {/* Active indicator line */}
               {isActive && (
                 <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-purple-500" />

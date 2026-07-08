@@ -6,13 +6,14 @@ export interface DownloadProgress {
 }
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { InstanceManifest } from "@/types/instance";
 import HeroCard from "@/components/HeroCard";
 import InstanceTabs from "@/components/InstanceTabs";
 import { useLaunch } from "@/hooks/useLaunch";
+import { useCrashReports } from "@/hooks/useCrashReports";
 import { getJavaVersionForMc, getJavaPath } from "@/lib/java";
 import { resolveVersion, getDownloadList } from "@/lib/version-resolver";
 import { generateLaunchArgs } from "@/lib/minecraft-core";
@@ -28,10 +29,13 @@ function InstanceView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { status: launchStatus, launch, stop, logs, clearLogs } = useLaunch(instanceName ?? undefined);
+  const crashReportsHook = useCrashReports(instanceName ?? undefined);
   const [canLaunch, setCanLaunch] = useState(true);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [gameDir, setGameDir] = useState("");
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+  const [crashBannerDismissed, setCrashBannerDismissed] = useState(false);
+  const [, setSearchParams] = useSearchParams();
   const dlUnlisten = useRef<UnlistenFn | null>(null);
 
   // Fetch game directory from backend for path construction
@@ -308,6 +312,14 @@ function InstanceView() {
     });
   }, [instanceName]);
 
+  // Auto-switch to crash tab when new crash detected
+  useEffect(() => {
+    if (crashReportsHook.hasNewCrash && crashReportsHook.reports.length > 0) {
+      setSearchParams({ tab: "crash" }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [crashReportsHook.hasNewCrash]);
+
   // After delete — go back to dashboard
   const handleDeleted = () => {
     navigate("/");
@@ -508,8 +520,109 @@ function InstanceView() {
           onOpenConsole={openConsoleWindow}
         />
 
-        {/* Instance tabs */}
-        <InstanceTabs logs={logs} onClearLogs={clearLogs} />
+        {/* Crash banner — shows after a new crash is detected */}
+        {crashReportsHook.hasNewCrash && !crashBannerDismissed && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 animate-fade-in">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive/20">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-destructive"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                  <path d="M12 2v4" />
+                  <path d="m4.93 4.93 2.83 2.83" />
+                  <path d="M2 12h4" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-destructive">
+                  Minecraft zakończył działanie z błędem
+                </p>
+                <p className="mt-0.5 text-sm text-destructive/80">
+                  Wykryto {crashReportsHook.reports.length} crash report
+                  {crashReportsHook.reports.length !== 1 ? "y" : ""}.
+                  {crashReportsHook.selectedReport
+                    ? " Otwieram podgląd najnowszego raportu."
+                    : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => {
+                    setSearchParams({ tab: "crash" }, { replace: true });
+                    setCrashBannerDismissed(true);
+                    crashReportsHook.dismissNewCrash();
+                    // Auto-select first report if none selected
+                    if (
+                      !crashReportsHook.selectedReport &&
+                      crashReportsHook.reports.length > 0
+                    ) {
+                      crashReportsHook.selectReport(crashReportsHook.reports[0]?.filename ?? null);
+                    }
+                  }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-destructive/20 px-3 text-xs font-medium text-destructive hover:bg-destructive/30 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Zobacz szczegóły
+                </button>
+                <button
+                  onClick={() => setCrashBannerDismissed(true)}
+                  className="shrink-0 rounded-lg p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Instance tabs — pass crash report state */}
+        <InstanceTabs
+          logs={logs}
+          onClearLogs={clearLogs}
+          hasNewCrash={crashReportsHook.hasNewCrash}
+          onDismissNewCrash={() => {
+            crashReportsHook.dismissNewCrash();
+            setCrashBannerDismissed(true);
+          }}
+        />
       </div>
     </div>
   );

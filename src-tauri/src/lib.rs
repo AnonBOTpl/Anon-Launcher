@@ -1,6 +1,7 @@
 mod account_manager;
 mod auth;
 mod content_installer;
+mod crash_handler;
 mod instance_manager;
 mod java_manager;
 mod manifest;
@@ -502,6 +503,96 @@ fn get_instance_status(
     Ok(manager.get_status(&instance_name))
 }
 
+#[tauri::command]
+fn open_crash_reports_folder(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    let instances_dir = app_data_dir.join("instances");
+    let crash_reports_dir = instances_dir
+        .join(sanitize_name(&instance_name))
+        .join("crash-reports");
+
+    // If crash-reports dir doesn't exist, try instance root (for JVM logs)
+    let target_dir = if crash_reports_dir.exists() {
+        crash_reports_dir
+    } else {
+        instances_dir.join(sanitize_name(&instance_name))
+    };
+
+    if !target_dir.exists() {
+        return Err(format!("Instance '{}' not found", instance_name));
+    }
+
+    #[cfg(target_os = "windows")]
+    let cmd = "explorer";
+    #[cfg(target_os = "windows")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    #[cfg(target_os = "macos")]
+    let cmd = "open";
+    #[cfg(target_os = "macos")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    #[cfg(target_os = "linux")]
+    let cmd = "xdg-open";
+    #[cfg(target_os = "linux")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    std::process::Command::new(cmd)
+        .arg(&args[0])
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
+
+    Ok(())
+}
+
+// ─── Crash Report Commands ──────────────────────────────────────────
+
+#[tauri::command]
+fn list_crash_reports(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+) -> Result<Vec<crash_handler::CrashReport>, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    crash_handler::list_crash_reports(&app_data_dir, &instance_name)
+}
+
+#[tauri::command]
+fn read_crash_report(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    filename: String,
+) -> Result<String, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    crash_handler::read_crash_report(&app_data_dir, &instance_name, &filename)
+}
+
+#[tauri::command]
+fn delete_crash_report(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    filename: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    crash_handler::delete_crash_report(&app_data_dir, &instance_name, &filename)
+}
+
+#[tauri::command]
+fn delete_all_crash_reports(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+) -> Result<u32, String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    crash_handler::delete_all_crash_reports(&app_data_dir, &instance_name)
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 // ─── Mod Installer Commands ─────────────────────────────────────────
@@ -809,6 +900,11 @@ pub fn run() {
             remove_instance_content,
             create_instance_from_modpack,
             cancel_modpack_installation,
+            open_crash_reports_folder,
+            list_crash_reports,
+            read_crash_report,
+            delete_crash_report,
+            delete_all_crash_reports,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
