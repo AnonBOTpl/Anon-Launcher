@@ -1366,9 +1366,113 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 - [x] **TASK-DEV-AUTH** — Mock auth
 - [x] **TASK-UPDATER** — GitHub Releases checker
 
+#### ✅ Ukończone
+- [x] **TASK-I18N (etapy 01-04)** — Internacjonalizacja (i18next, EN domyślnie + PL)
+
 #### ❌ Do zrobienia
 - [ ] **TASK-29** — Testy końcowe
-- [ ] **TASK-I18N** — Internacjonalizacja (i18next, EN + PL)
+
+#### ❌ Anulowane / Pominięte
+- ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar~~
+- ~~**TASK-15** — Tryb offline~~
+- ~~**TASK-16** — Kolejka pobrań~~
+- ~~**TASK-17** — Monitorowanie postępu~~
+- ~~**TASK-18** — Pobieranie assetów~~ ✅
+- ~~**TASK-25** — Crash-reporty~~
+- ~~**TASK-28c** — Toasty i notyfikacje~~
+
+## 2026-07-09 — TASK-I18N: Internacjonalizacja (i18next, EN domyślnie + PL)
+
+### Co zostało zrobione
+
+**TASK-I18N-ETAP-01 — Setup:**
+- Zainstalowano `i18next` + `react-i18next`
+- `src/lib/i18n.ts` — konfiguracja: EN domyślnie, PL jako fallback, localStorage persist (`anon_language`)
+- `src/locales/en.json` + `src/locales/pl.json` — pełne pliki locale (~400 kluczy każdy)
+- `src/main.tsx` — import i18n przed App
+- `src/components/SettingsDialog.tsx` — przełącznik języka z `useTranslation()` hookiem (reaktywny)
+
+**TASK-I18N-ETAP-02 — Rdzeń UI (15 plików):**
+- Dashboard, Sidebar, HeroCard, InstanceCard, InstanceView, InstanceTabs, CreateInstance
+- ConsoleWindow, GameConsole, LaunchButton, OpenFolderButton, UpdateBanner, CreateInstance
+
+**TASK-I18N-ETAP-03 — Zarządzanie (12 plików):**
+- ModList (ModCard), ModSearch (ModDetails, FilterBar, ModSearchResult), MissingDepsWarning, ModpackSearch
+- ContentList (ContentCard), ContentBrowser (ContentDetails, ContentSearchResult)
+- SnapshotList, RestoreSnapshotDialog, AccountSwitcher
+- CrashReportList, CrashReportViewer, AvatarRenderer
+
+**TASK-I18N-ETAP-04 — Formularze + dialogi + hooki (13 plików):**
+- CreateInstanceForm, EditInstanceDialog, DeleteInstanceDialog, CloneInstanceDialog, ExportInstanceDialog, ImportInstanceDialog
+- JavaSettings, VersionSelect, LoaderSelect
+- Hooki: useLaunch, useInstances, useCrashReports (przez `i18n.t()` — bo hooki nie mają dostępu do `useTranslation`)
+
+### Nowe namespace'y w locale
+| Namespace | Opis |
+|---|---|
+| `edit` | Edycja instancji + java mismatch warning |
+| `delete` | Usuwanie z type-to-confirm |
+| `clone` | Klonowanie instancji |
+| `export` | Eksport ZIP z progressem |
+| `import` | Import ZIP z 3-krokowym flow |
+| `java` | Pobieranie/weryfikacja Javy |
+| `version` | Selector wersji Minecraft |
+| `loader` | Selector loadera (Vanilla/Fabric) |
+| `categories` | 17 kategorii Modrinth (EN + PL) |
+| `modpackSearch` | Wyszukiwarka modpacków |
+| `create.errors.*` | 10 kluczy walidacji formularza |
+
+### Fixy po code review
+- Reactivity: `useTranslation()` zamiast `i18n.t()` w SettingsDialog
+- Trans markup: usunięto HTML `<1>`/`<2>` z locale stringów używanych z plain `t()`
+- Brakujące `useTranslation()` w `ModSearchResult` i `DependencyItem`
+- Broken destructuring w `MissingDepsWarning.DependencyItem`
+
+### Podsumowanie
+- **44 pliki zmienione** (+4 nowe: i18n.ts, en.json, pl.json, Titlebar.tsx)
+- **~400 kluczy** w EN + PL (10 namespace'ów)
+- **1810 insertions, 507 deletions**
+- `tsc --noEmit` ✅ (0 błędów)
+
+### Status projektu
+
+#### ✅ Ukończone
+- [x] **TASK-01** — Inicjalizacja projektu
+- [x] **TASK-02** — Konfiguracja shadcn/ui
+- [x] **TASK-03** — System manifestów instancji
+- [x] **TASK-04** — Dashboard z Sidebarem
+- [x] **TASK-05** — Tworzenie instancji
+- [x] **TASK-06** — Klonowanie instancji
+- [x] **TASK-07** — Eksport i import ZIP
+- [x] **TASK-08** — Otwieranie folderu instancji
+- [x] **TASK-09** — Microsoft Device Code Flow
+- [x] **TASK-10** — Stronghold + konta
+- [x] **TASK-11** — Moduł pobierania Java
+- [x] **TASK-12** — Minecraft Core
+- [x] **TASK-13** — Uruchamianie + Process Manager
+- [x] **TASK-14** — Fabric loader
+- [x] **TASK-19** — Wyszukiwarka modów
+- [x] **TASK-20** — Instalacja modów
+- [x] **TASK-21** — Aktualizacja modów
+- [x] **TASK-22** — Zależności modów
+- [x] **TASK-23** — Snapshoty
+- [x] **TASK-24** — Przywracanie snapshotów
+- [x] **TASK-26** — Logi w czasie rzeczywistym
+- [x] **TASK-27** — Avatar 2D
+- [x] **TASK-28a** — Redesign UI
+- [x] **TASK-28b** — Motywy, animacje
+- [x] **TASK-30** — Usuwanie instancji
+- [x] **TASK-31** — Edycja instancji
+- [x] **TASK-32** — Widok instancji
+- [x] **TASK-33** — Resourcepacki/shadery
+- [x] **TASK-34** — Tryb "Z modpacka"
+- [x] **TASK-35** — ContentList + ContentBrowser
+- [x] **TASK-DEV-AUTH** — Mock auth
+- [x] **TASK-UPDATER** — GitHub Releases checker
+- [x] **TASK-I18N** — Internacjonalizacja (i18next, EN + PL, 4 etapy)
+
+#### ❌ Do zrobienia
+- [ ] **TASK-29** — Testy końcowe
 
 #### ❌ Anulowane / Pominięte
 - ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar~~
