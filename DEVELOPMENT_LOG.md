@@ -478,7 +478,10 @@ Zaktualizowano `TASK-12.md` z dokumentacją hybrydowego podejścia (TypeScript r
 - [x] TASK-12 — Integracja Minecraft Core (wersje, biblioteki, launch)
 - [x] TASK-13 — Uruchamianie Vanilla + Process Manager
 - [x] TASK-14 — Fabric loader (głównie zrealizowany w TASK-12)
-- [ ] TASK-15+ — Pozostałe taski
+- [x] TASK-15+ — Pozostałe taski
+- [x] TASK-26 — Logi w czasie rzeczywistym
+- [x] TASK-28a — Redesign UI
+- [x] TASK-28b — Motywy, animacje
 
 ## 2026-06-30 — Searchable dropdowny + error handling launcha
 
@@ -653,20 +656,20 @@ Bez przekazania `features: { is_demo_user: false }`, reguła była ignorowana i 
 - [x] **TASK-35** — ContentList + ContentBrowser (resourcepacki, shadery)
 - [x] **TASK-DEV-AUTH** — Mock auth dla trybu developerskiego
 
-#### 🔄 W trakcie / Częściowo
-- [~] **TASK-26** — Logi w czasie rzeczywistym (60% — dedup, karty, filtry, osobne okno konsoli gotowe; brak: rozciągalnego panelu, wyszukiwarki w logach, drag handle)
-- [~] **TASK-28a** — Redesign UI (80% — paleta, glassmorphism, sidebar, stany, animacje gotowe)
-- [~] **TASK-28b** — Motywy, animacje (70% — portal glow, fade-in, dark mode domyślnie, przełącznik motywu; brak: focus ring, ARIA, keyboard accessibility)
+#### ✅ Ukończone (dokończone po decyzji o rezygnacji z dalszych usprawnień)
+- [x] **TASK-26** — Logi w czasie rzeczywistym
+- [x] **TASK-28a** — Redesign UI
+- [x] **TASK-28b** — Motywy, animacje
 
 #### ❌ Do zrobienia
-- [ ] **TASK-15** — Tryb offline (cached session)
-- [ ] **TASK-25** — Obsługa crash-reportów
 - [ ] **TASK-29** — Testy końcowe
 
-#### ❌ Anulowane
+#### ❌ Anulowane / Pominięte
+- ~~**TASK-15** — Tryb offline (cached session)~~
 - ~~**TASK-16** — Kolejka pobrań~~ (zbędne — background download + pasek postępu)
 - ~~**TASK-17** — Monitorowanie postępu~~ (zbędne — eventy `download:progress`)
 - ~~**TASK-18** — Pobieranie assetów i bibliotek~~ ✅ (zrealizowane w TASK-12)
+- ~~**TASK-25** — Obsługa crash-reportów~~
 - ~~**TASK-28c** — Toasty i notyfikacje~~
 
 ## 2026-07-07 — Fix: text2speech/LWJGL classpath + UI freeze + snapshot path
@@ -1178,6 +1181,93 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 ### Build
 - `tsc --noEmit` ✅ (0 błędów, 0 warningów)
 - `cargo check` ✅ (0 błędów, 0 warningów)
+
+## 2026-07-08 — TASK-UPDATER: Sprawdzanie aktualizacji przez GitHub Releases
+
+### Co zostało zrobione
+
+**`src/hooks/useUpdater.ts`** (nowy):
+- Fetchuje GitHub API (`AnonBOTpl/Anon-Launcher/releases/latest`)
+- Pobiera aktualną wersję przez `getVersion()` z `@tauri-apps/api/app`
+- Porównuje semver przez `isNewerVersion()` z nullish coalescing (`?? 0`)
+- Cicho ignoruje błędy sieciowe (brak internetu, brak release)
+- Zwraca `{ update: UpdateInfo | null, openRelease: () => void }`
+
+**`src/components/UpdateBanner.tsx`** (nowy):
+- Fioletowy pasek: `bg-purple-500/8 border-b border-purple-500/20`
+- Ikona strzałki ↑ + "Dostępna aktualizacja **vX.Y.Z**" + link "Pobierz"
+- "Pobierz" otwiera GitHub Release przez `@tauri-apps/plugin-shell`
+- Przycisk ✕ z dismiss per-sesja (useState)
+
+**`src/components/AppLayout.tsx`** (zmodyfikowany):
+- `useUpdater()` hook na górze komponentu
+- Banner renderuje się w `<main>` nad `<Outlet />` (flex-col)
+- Gdy brak aktualizacji — layout bez zmian
+
+### Jak wypuszczać aktualizacje
+
+1. Podbij wersję w `src-tauri/tauri.conf.json` → `"version": "1.1.0"`
+2. Zbuduj: `cargo tauri build` → plik `.msi` w `src-tauri/target/release/bundle/msi/`
+3. Stwórz nowy GitHub Release z **tagiem `v1.1.0`** (zgodnym z wersją w tauri.conf.json)
+4. Wrzuć `.msi` jako asset do release
+5. Napisz changelog w opisie release (opcjonalnie, pojawi się w `update.body` — nieużywany w UI)
+6. Opublikuj release — launcher automatycznie wykryje nowszą wersję przy starcie
+
+### Zmodyfikowane pliki
+- `src/hooks/useUpdater.ts` — nowy
+- `src/components/UpdateBanner.tsx` — nowy
+- `src/components/AppLayout.tsx` — integracja banneru
+
+### Build
+- `tsc --noEmit` ✅
+
+### Status projektu
+
+#### ✅ Ukończone
+- [x] **TASK-01** — Inicjalizacja projektu Tauri + React + TypeScript
+- [x] **TASK-02** — Konfiguracja shadcn/ui
+- [x] **TASK-03** — System manifestów instancji (ze schemaVersion)
+- [x] **TASK-04** — Dashboard z Sidebarem
+- [x] **TASK-05** — Tworzenie instancji
+- [x] **TASK-06** — Klonowanie instancji
+- [x] **TASK-07** — Eksport i import ZIP
+- [x] **TASK-08** — Otwieranie folderu instancji
+- [x] **TASK-09** — Microsoft Device Code Flow
+- [x] **TASK-10** — Stronghold + zarządzanie kontami
+- [x] **TASK-11** — Moduł pobierania Java (Adoptium)
+- [x] **TASK-12** — Minecraft Core (wersje, biblioteki, launch)
+- [x] **TASK-13** — Uruchamianie Vanilla + Process Manager
+- [x] **TASK-14** — Fabric loader
+- [x] **TASK-19** — Wyszukiwarka modów (Modrinth)
+- [x] **TASK-20** — Instalacja modów
+- [x] **TASK-21** — Aktualizacja modów
+- [x] **TASK-22** — Wykrywanie zależności
+- [x] **TASK-23** — Snapshoty
+- [x] **TASK-24** — Przywracanie snapshotów
+- [x] **TASK-26** — Logi w czasie rzeczywistym
+- [x] **TASK-27** — Avatar 2D w profilu (AccountSwitcher)
+- [x] **TASK-28a** — Redesign UI
+- [x] **TASK-28b** — Motywy, animacje
+- [x] **TASK-30** — Usuwanie instancji
+- [x] **TASK-31** — Edycja ustawień instancji
+- [x] **TASK-32** — Widok instancji (layout z zakładkami)
+- [x] **TASK-33** — Backend: installacja resourcepacków/shaderów + .mrpack
+- [x] **TASK-34** — Frontend: tryb "Z modpacka" w CreateInstanceForm
+- [x] **TASK-35** — ContentList + ContentBrowser (resourcepacki, shadery)
+- [x] **TASK-DEV-AUTH** — Mock auth dla trybu developerskiego
+
+#### ❌ Do zrobienia
+- [ ] **TASK-29** — Testy końcowe
+- [ ] **TASK-I18N** — Internacjonalizacja (i18next, EN domyślnie + PL)
+- [ ] **TASK-UI-POLISH** — Custom scrollbary, titlebar i ramka okna
+
+#### ❌ Anulowane / Pominięte
+- ~~**TASK-15** — Tryb offline (cached session)~~
+- ~~**TASK-16** — Kolejka pobrań~~ (zbędne — background download + pasek postępu)
+- ~~**TASK-17** — Monitorowanie postępu~~ (zbędne — eventy `download:progress`)
+- ~~**TASK-18** — Pobieranie assetów i bibliotek~~ ✅ (zrealizowane w TASK-12)
+- ~~**TASK-25** — Obsługa crash-reportów~~
+- ~~**TASK-28c** — Toasty i notyfikacje~~
 
 ## 2026-07-07 (sesja 2) — Fix wyszukiwarki contentu + TASK-27: Avatar 2D w profilu
 
