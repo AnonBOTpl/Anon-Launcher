@@ -7,9 +7,11 @@ import RestoreSnapshotDialog from "@/components/RestoreSnapshotDialog";
 
 interface SnapshotListProps {
   instanceName: string;
+  /** Disable snapshot management while game is running */
+  disabled?: boolean;
 }
 
-export default function SnapshotList({ instanceName }: SnapshotListProps) {
+export default function SnapshotList({ instanceName, disabled }: SnapshotListProps) {
   const { snapshots, loading, error, creating, create, remove, restore, restoring } =
     useSnapshots(instanceName);
 
@@ -50,12 +52,37 @@ export default function SnapshotList({ instanceName }: SnapshotListProps) {
 
   return (
     <div className="space-y-4">
+      {/* Running blocker banner */}
+      {disabled && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-amber-400">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
+                Zarządzanie snapshotami jest zablokowane podczas gry. Zatrzymaj instancję, aby tworzyć lub przywracać snapshoty.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create snapshot */}
       <div className="flex items-center gap-3">
         <select
           value={createMode}
           onChange={(e) => setCreateMode(e.target.value as "full" | "metadata")}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-xs outline-none focus:border-ring"
+          disabled={disabled}
+          className={cn(
+            "rounded-lg border px-3 py-2 text-xs outline-none",
+            disabled
+              ? "border-muted text-muted-foreground/50 cursor-not-allowed bg-muted/50"
+              : "border-input bg-background focus:border-ring",
+          )}
         >
           <option value="full">Pełna kopia</option>
           <option value="metadata">Tylko metadane</option>
@@ -63,8 +90,13 @@ export default function SnapshotList({ instanceName }: SnapshotListProps) {
         <Button
           size="sm"
           onClick={handleCreate}
-          disabled={creating}
-          className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20 text-xs"
+          disabled={creating || disabled}
+          className={cn(
+            "text-xs",
+            disabled
+              ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20",
+          )}
         >
           {creating ? (
             <>
@@ -168,13 +200,20 @@ export default function SnapshotList({ instanceName }: SnapshotListProps) {
                 {/* Restore */}
                 <button
                   onClick={() =>
+                    !disabled &&
                     setRestoreTarget({
                       timestamp: snapshot.timestamp,
                       mode: snapshot.mode,
                     })
                   }
-                  title="Przywróć snapshot"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                  disabled={disabled}
+                  title={disabled ? "Niedostępne podczas gry" : "Przywróć snapshot"}
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                    disabled
+                      ? "text-muted-foreground/20 cursor-not-allowed"
+                      : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10",
+                  )}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -182,7 +221,17 @@ export default function SnapshotList({ instanceName }: SnapshotListProps) {
                 </button>
 
                 {/* Delete */}
-                {confirmDelete === snapshot.timestamp ? (
+                {disabled ? (
+                  <button
+                    disabled
+                    title="Niedostępne podczas gry"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    </svg>
+                  </button>
+                ) : confirmDelete === snapshot.timestamp ? (
                   <div className="flex items-center gap-1">
                     <Button
                       variant="destructive"

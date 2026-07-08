@@ -1302,3 +1302,79 @@ Usunięto cały koncept "offline" z kodu — wszystkie konta są zawsze traktowa
 
 ### Build
 - `tsc --noEmit` ✅ (0 błędów)
+
+## 2026-07-09 — Fix: Persistence stanu uruchomienia + breathing border + blokada operacji podczas gry
+
+### Fix: Przycisk "Graj" po powrocie do uruchomionej instancji
+
+**Przyczyna:** `useLaunch` hook startował z `{ type: "idle" }` przy każdym zamontowaniu. Po wyjściu i powrocie, event `instance:launched` już się odpalił — hook nie wiedział że proces dalej żyje.
+
+**Fix:**
+- `src-tauri/src/process_manager.rs` — `#[serde(tag = "type")]` na `InstanceStatus` enum
+- `src/hooks/useLaunch.ts` — `useEffect` na mount woła `invoke("get_instance_status")`
+
+### Feature: Oddychająca ramka na dashboardzie
+
+- `src/styles/globals.css` — animacja `running-glow`
+- `src/components/InstanceCard.tsx` — `animate-running-glow` + badge "Uruchomiona"
+
+### Feature: Custom scrollbar w konsoli
+- `src/components/GameConsole.tsx` — klasa `custom-scrollbar`
+
+### Blokada operacji podczas uruchomionej gry
+Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCard), Toggle/Szukaj/Aktualizuj/Kosz (ModCard), Kosz (ContentCard), Utwórz/Przywróć/Kosz (SnapshotList) + żółte banery ostrzeżenia.
+
+### Zmodyfikowane pliki
+`process_manager.rs`, `useLaunch.ts`, `globals.css`, `HeroCard.tsx`, `InstanceCard.tsx`, `GameConsole.tsx`, `InstanceTabs.tsx`, `InstanceView.tsx`, `ModList.tsx`, `ContentList.tsx`, `SnapshotList.tsx`
+
+### Build
+- `tsc --noEmit` ✅
+
+### Status projektu
+
+#### ✅ Ukończone
+- [x] **TASK-01** — Inicjalizacja projektu
+- [x] **TASK-02** — Konfiguracja shadcn/ui
+- [x] **TASK-03** — System manifestów instancji
+- [x] **TASK-04** — Dashboard z Sidebarem
+- [x] **TASK-05** — Tworzenie instancji
+- [x] **TASK-06** — Klonowanie instancji
+- [x] **TASK-07** — Eksport i import ZIP
+- [x] **TASK-08** — Otwieranie folderu instancji
+- [x] **TASK-09** — Microsoft Device Code Flow
+- [x] **TASK-10** — Stronghold + konta
+- [x] **TASK-11** — Moduł pobierania Java
+- [x] **TASK-12** — Minecraft Core
+- [x] **TASK-13** — Uruchamianie + Process Manager
+- [x] **TASK-14** — Fabric loader
+- [x] **TASK-19** — Wyszukiwarka modów
+- [x] **TASK-20** — Instalacja modów
+- [x] **TASK-21** — Aktualizacja modów
+- [x] **TASK-22** — Zależności modów
+- [x] **TASK-23** — Snapshoty
+- [x] **TASK-24** — Przywracanie snapshotów
+- [x] **TASK-26** — Logi w czasie rzeczywistym
+- [x] **TASK-27** — Avatar 2D
+- [x] **TASK-28a** — Redesign UI
+- [x] **TASK-28b** — Motywy, animacje
+- [x] **TASK-30** — Usuwanie instancji
+- [x] **TASK-31** — Edycja instancji
+- [x] **TASK-32** — Widok instancji
+- [x] **TASK-33** — Resourcepacki/shadery
+- [x] **TASK-34** — Tryb "Z modpacka"
+- [x] **TASK-35** — ContentList + ContentBrowser
+- [x] **TASK-DEV-AUTH** — Mock auth
+- [x] **TASK-UPDATER** — GitHub Releases checker
+
+#### ❌ Do zrobienia
+- [ ] **TASK-29** — Testy końcowe
+- [ ] **TASK-I18N** — Internacjonalizacja (i18next, EN + PL)
+
+#### ❌ Anulowane / Pominięte
+- ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar~~
+- ~~**TASK-15** — Tryb offline~~
+- ~~**TASK-16** — Kolejka pobrań~~
+- ~~**TASK-17** — Monitorowanie postępu~~
+- ~~**TASK-18** — Pobieranie assetów~~ ✅
+- ~~**TASK-25** — Crash-reporty~~
+- ~~**TASK-28c** — Toasty i notyfikacje~~

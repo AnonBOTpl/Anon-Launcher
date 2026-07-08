@@ -45,24 +45,16 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
       ? `Fabric ${instance.loaderVersion}`
       : "Vanilla";
 
+  const isRunning = launchStatus.type === "running";
+
   return (
     <>
       <div className={cn(
         "group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card/90 to-card/60 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/10 animate-fade-in",
         launchStatus.type === "running"
-          ? "animate-running-glow border-purple-500/40"
+          ? "border-emerald-500/30"
           : "border-border/50",
       )}>
-        {/* Running indicator — pulsing dot in corner */}
-        {launchStatus.type === "running" && (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 border border-emerald-500/20 z-10">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-[10px] font-medium text-emerald-400">Uruchomiona</span>
-          </div>
-        )}
         {/* Portal glow */}
         <div className="pointer-events-none absolute -inset-px animate-portal-pulse rounded-2xl opacity-50" />
 
@@ -134,9 +126,15 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
 
             {/* Edit */}
             <button
-              onClick={() => setEditOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-accent transition-all"
-              title="Edytuj"
+              onClick={() => !isRunning && setEditOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
+                isRunning
+                  ? "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
+              )}
+              title={isRunning ? "Niedostępne podczas gry" : "Edytuj"}
+              disabled={isRunning}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -156,9 +154,15 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
 
             {/* Clone */}
             <button
-              onClick={() => setCloneOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-accent transition-all"
-              title="Klonuj"
+              onClick={() => !isRunning && setCloneOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
+                isRunning
+                  ? "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
+              )}
+              title={isRunning ? "Niedostępne podczas gry" : "Klonuj"}
+              disabled={isRunning}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -178,9 +182,15 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
 
             {/* Export */}
             <button
-              onClick={() => setExportOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-accent transition-all"
-              title="Eksportuj ZIP"
+              onClick={() => !isRunning && setExportOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
+                isRunning
+                  ? "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
+              )}
+              title={isRunning ? "Niedostępne podczas gry" : "Eksportuj ZIP"}
+              disabled={isRunning}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -207,9 +217,15 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
 
             {/* Delete */}
             <button
-              onClick={() => setDeleteOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all"
-              title="Usuń"
+              onClick={() => !isRunning && setDeleteOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
+                isRunning
+                  ? "text-muted-foreground/20 cursor-not-allowed"
+                  : "text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10",
+              )}
+              title={isRunning ? "Niedostępne podczas gry" : "Usuń"}
+              disabled={isRunning}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

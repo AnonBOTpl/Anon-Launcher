@@ -26,6 +26,8 @@ interface InstanceTabsProps {
   hasNewCrash?: boolean;
   /** Dismiss new crash indicator */
   onDismissNewCrash?: () => void;
+  /** Whether the game is currently running — disable mod/resource management */
+  isRunning?: boolean;
 }
 
 const TABS: Tab[] = [
@@ -38,7 +40,7 @@ const TABS: Tab[] = [
   { id: "crash", label: "Crash" },
 ];
 
-function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }: InstanceTabsProps) {
+function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, isRunning }: InstanceTabsProps) {
   const { id } = useParams<{ id: string }>();
   const instanceName = id ? decodeURIComponent(id) : null;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,6 +171,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
                 instanceName={instanceName}
                 instanceMcVersion={instanceMcVersion}
                 onUpdatesFound={setModUpdatesFound}
+                disabled={isRunning}
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -181,7 +184,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
             {instanceName ? (
-              <ContentList instanceName={instanceName} folder="resourcepacks" />
+              <ContentList instanceName={instanceName} folder="resourcepacks" disabled={isRunning} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Wybierz instancję, aby zarządzać paczkami zasobów.
@@ -198,6 +201,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
                 folder="shaderpacks"
                 irisInstalled={irisInstalled}
                 onInstallIris={handleInstallIris}
+                disabled={isRunning}
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -216,7 +220,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash }
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
                 {instanceName ? (
-              <SnapshotList instanceName={instanceName} />
+              <SnapshotList instanceName={instanceName} disabled={isRunning} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Wybierz instancję, aby zarządzać snapshotami.

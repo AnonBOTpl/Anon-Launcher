@@ -27,6 +27,8 @@ interface ModListProps {
   instanceMcVersion?: string;
   /** Called when mod updates availability changes (for badge on tab) */
   onUpdatesFound?: (found: boolean) => void;
+  /** Disable mod management while game is running */
+  disabled?: boolean;
 }
 
 // ─── ModCard ────────────────────────────────────────────────────────
@@ -39,9 +41,11 @@ interface ModCardProps {
   onRemove: (fileName: string) => void;
   onUpdate: (update: ModUpdate) => Promise<boolean>;
   onSearchMod: (query: string) => void;
+  /** Disable actions when game is running */
+  disabled?: boolean;
 }
 
-function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchMod }: ModCardProps) {
+function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchMod, disabled }: ModCardProps) {
   const [removing, setRemoving] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [updatingMod, setUpdatingMod] = useState(false);
@@ -83,11 +87,13 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
       {/* Toggle switch */}
       <button
         onClick={handleToggle}
+        disabled={disabled}
         className={cn(
           "relative h-5 w-9 shrink-0 rounded-full transition-colors",
           mod.enabled ? "bg-purple-500" : "bg-muted",
+          disabled && "opacity-50 cursor-not-allowed",
         )}
-        title={mod.enabled ? "Wyłącz" : "Włącz"}
+        title={disabled ? "Niedostępne podczas gry" : (mod.enabled ? "Wyłącz" : "Włącz")}
       >
         <span
           className={cn(
@@ -158,9 +164,15 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
         {/* Search button for mods without projectSlug */}
         {!mod.projectSlug && (
           <button
-            onClick={() => onSearchMod(mod.name)}
-            title="Znajdź na Modrinth"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10 transition-colors"
+            onClick={() => !disabled && onSearchMod(mod.name)}
+            disabled={disabled}
+            title={disabled ? "Niedostępne podczas gry" : "Znajdź na Modrinth"}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+              disabled
+                ? "text-muted-foreground/20 cursor-not-allowed"
+                : "text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10",
+            )}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -172,9 +184,14 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
         {update && (
           <button
             onClick={handleUpdate}
-            disabled={updatingMod}
-            title={`Aktualizuj do ${update.newVersionNumber}`}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
+            disabled={updatingMod || disabled}
+            title={disabled ? "Niedostępne podczas gry" : `Aktualizuj do ${update.newVersionNumber}`}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+              disabled
+                ? "text-muted-foreground/20 cursor-not-allowed"
+                : "text-amber-400 hover:bg-amber-500/10",
+            )}
           >
             {updatingMod ? (
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-amber-400" />
@@ -189,7 +206,17 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
         )}
 
         {/* Remove button */}
-        {confirmRemove ? (
+        {disabled ? (
+          <button
+            disabled
+            title="Niedostępne podczas gry"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </button>
+        ) : confirmRemove ? (
           <div className="flex items-center gap-1">
             <Button
               variant="destructive"
@@ -227,7 +254,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
 
 // ─── Main ModList Component ────────────────────────────────────────
 
-function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListProps) {
+function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: ModListProps) {
   const { mods, loading, error, toggle, remove, refresh } = useMods(instanceName);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -343,6 +370,25 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
 
   return (
     <div className="space-y-4">
+      {/* Running blocker banner */}
+      {disabled && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-amber-400">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
+                Zarządzanie modami jest zablokowane podczas gry. Zatrzymaj instancję, aby modyfikować mody.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
@@ -405,11 +451,14 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
           <Button
             onClick={() => showSearch ? closeSearch() : openSearch()}
             size="sm"
+            disabled={disabled && !showSearch}
             className={cn(
               "text-xs h-7",
               showSearch
                 ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20",
+                : disabled
+                  ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20",
             )}
           >
             {showSearch ? (
@@ -503,6 +552,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound }: ModListPro
                     onRemove={remove}
                     onUpdate={handleUpdateMod}
                     onSearchMod={(query) => openSearch(query)}
+                    disabled={disabled}
                   />
                 ))}
             </div>

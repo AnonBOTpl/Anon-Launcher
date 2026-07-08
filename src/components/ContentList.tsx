@@ -22,6 +22,8 @@ interface ContentListProps {
   irisInstalled?: boolean;
   /** For shaderpacks: callback to install Iris */
   onInstallIris?: () => Promise<void>;
+  /** Disable content management while game is running */
+  disabled?: boolean;
 }
 
 // ─── ContentCard ────────────────────────────────────────────────────
@@ -29,9 +31,10 @@ interface ContentListProps {
 interface ContentCardProps {
   item: InstalledContent;
   onRemove: (fileName: string) => void;
+  disabled?: boolean;
 }
 
-function ContentCard({ item, onRemove }: ContentCardProps) {
+function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
 
@@ -81,7 +84,17 @@ function ContentCard({ item, onRemove }: ContentCardProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
-        {confirmRemove ? (
+        {disabled ? (
+          <button
+            disabled
+            title="Niedostępne podczas gry"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </button>
+        ) : confirmRemove ? (
           <div className="flex items-center gap-1">
             <Button
               variant="destructive"
@@ -119,7 +132,7 @@ function ContentCard({ item, onRemove }: ContentCardProps) {
 
 // ─── Main ContentList Component ─────────────────────────────────────
 
-function ContentList({ instanceName, folder, irisInstalled, onInstallIris }: ContentListProps) {
+function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disabled }: ContentListProps) {
   const [items, setItems] = useState<InstalledContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +173,25 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris }: Con
 
   return (
     <div className="space-y-4">
+      {/* Running blocker banner */}
+      {disabled && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-amber-400">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
+                Zarządzanie {folder === "resourcepacks" ? "paczkami zasobów" : "shaderpackami"} jest zablokowane podczas gry. Zatrzymaj instancję, aby modyfikować zawartość.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
@@ -176,11 +208,14 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris }: Con
           <Button
             onClick={() => setShowSearch(!showSearch)}
             size="sm"
+            disabled={disabled && !showSearch}
             className={cn(
               "text-xs h-7",
               showSearch
                 ? "bg-muted text-muted-foreground hover:bg-muted/80"
-                : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20",
+                : disabled
+                  ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20",
             )}
           >
             {showSearch ? (
@@ -203,7 +238,7 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris }: Con
       </div>
 
       {/* Iris not installed banner (only for shaders) */}
-      {folder === "shaderpacks" && irisInstalled === false && !showSearch && (
+      {folder === "shaderpacks" && irisInstalled === false && !showSearch && !disabled && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
           <div className="flex items-start gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-amber-400">
@@ -299,6 +334,7 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris }: Con
               key={item.fileName}
               item={item}
               onRemove={handleRemove}
+              disabled={disabled}
             />
           ))}
         </div>

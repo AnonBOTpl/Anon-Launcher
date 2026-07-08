@@ -613,7 +613,7 @@ function InstanceView() {
           </div>
         )}
 
-        {/* Instance tabs — pass crash report state */}
+        {/* Instance tabs — pass crash report state and running status */}
         <InstanceTabs
           logs={logs}
           onClearLogs={clearLogs}
@@ -622,6 +622,7 @@ function InstanceView() {
             crashReportsHook.dismissNewCrash();
             setCrashBannerDismissed(true);
           }}
+          isRunning={launchStatus.type === "running"}
         />
       </div>
     </div>
