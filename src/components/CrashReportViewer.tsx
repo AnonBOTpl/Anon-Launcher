@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface CrashReportViewerProps {
   filename: string;
@@ -81,6 +82,7 @@ export function CrashReportViewer({
   onOpenFolder,
   onDelete,
 }: CrashReportViewerProps) {
+  const { t } = useTranslation();
   const highlightedContent = useMemo(
     () => highlightCrashText(content),
     [content],
@@ -108,14 +110,14 @@ export function CrashReportViewer({
               {filename}
             </p>
             <p className="text-xs text-muted-foreground">
-              {isJvm ? "JVM Crash" : "Minecraft Crash"} · {formatFileSize(fileSize)}
+              {isJvm ? t("crash.jvmCrash") : t("crash.minecraftCrash")} · {formatFileSize(fileSize)}
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
           className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Zamknij podgląd"
+          title={t("crash.closePreview")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -158,7 +160,7 @@ export function CrashReportViewer({
           >
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
-          Otwórz folder
+          {t("crash.openFolder")}
         </button>
         <button
           onClick={onDelete}
@@ -178,7 +180,7 @@ export function CrashReportViewer({
             <path d="M3 6h18" />
             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
           </svg>
-          Usuń
+          {t("crash.delete")}
         </button>
       </div>
     </div>

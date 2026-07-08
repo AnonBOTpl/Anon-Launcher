@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useModSearch } from "@/hooks/useModSearch";
 import { getProjectVersions, formatDownloads } from "@/lib/modrinth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ interface ModpackSearchResultProps {
 }
 
 function ModpackSearchResult({ hit, onSelect }: ModpackSearchResultProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-card/50 p-3 transition-all hover:border-purple-500/30 hover:bg-purple-500/5">
       {/* Icon */}
@@ -38,7 +40,7 @@ function ModpackSearchResult({ hit, onSelect }: ModpackSearchResultProps) {
         </p>
         <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>{hit.author}</span>
-          <span>{formatDownloads(hit.downloads)} pobrań</span>
+          <span>{formatDownloads(hit.downloads)} {t("modDetails.downloads")}</span>
           <span className="flex items-center gap-0.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
@@ -62,7 +64,7 @@ function ModpackSearchResult({ hit, onSelect }: ModpackSearchResultProps) {
         onClick={() => onSelect(hit)}
         className="shrink-0 mt-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/20 text-xs"
       >
-        Wybierz
+        {t("modpackSearch.select")}
       </Button>
     </div>
   );
@@ -87,6 +89,7 @@ function SelectedModpackView({
   onVersionChange,
   onBack,
 }: SelectedModpackViewProps) {
+  const { t } = useTranslation();
   // Extract MC version and loader from dependencies
   const mcVersion = selectedVersion?.game_versions[0] ?? "—";
   const loader = selectedVersion?.loaders[0] ?? "fabric";
@@ -101,7 +104,7 @@ function SelectedModpackView({
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        Powrót do wyników
+        {t("modpackSearch.backToResults")}
       </button>
 
       {/* Header */}
@@ -115,21 +118,21 @@ function SelectedModpackView({
         )}
         <div className="flex-1 min-w-0">
           <h2 className="text-lg font-semibold truncate">{hit.title}</h2>
-          <p className="text-sm text-muted-foreground">{hit.author} · {formatDownloads(hit.downloads)} pobrań</p>
+          <p className="text-sm text-muted-foreground">{hit.author} · {formatDownloads(hit.downloads)} {t("modDetails.downloads")}</p>
         </div>
       </div>
 
       {/* Version selector */}
       <div className="rounded-lg border border-border/50 bg-card/50 p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Wybierz wersję</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t("modDetails.selectVersion")}</h3>
         
         {loadingVersions ? (
           <div className="flex items-center gap-2 py-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-            <span className="text-xs text-muted-foreground">Ładowanie wersji...</span>
+            <span className="text-xs text-muted-foreground">{t("modpackSearch.loadingVersions")}</span>
           </div>
         ) : versions.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Brak dostępnych wersji dla wybranej wersji Minecraft.</p>
+          <p className="text-xs text-muted-foreground">{t("modpackSearch.noVersions")}</p>
         ) : (
           <div className="flex items-center gap-3">
             <select
@@ -160,7 +163,7 @@ function SelectedModpackView({
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
             </svg>
             <p className="text-xs text-emerald-400/80">
-              Instancja zostanie utworzona z: <strong className="text-emerald-300">Minecraft {mcVersion}</strong> + <strong className="text-emerald-300">{loader} {selectedVersion.version_number}</strong>
+              {t("modpackSearch.instanceCreatedWith", { mcVersion, loader, version: selectedVersion.version_number })}
             </p>
           </div>
         </div>
@@ -184,6 +187,7 @@ interface ModpackSearchProps {
 }
 
 function ModpackSearch({ onSelect }: ModpackSearchProps) {
+  const { t } = useTranslation();
   const {
     results,
     loading,
@@ -324,7 +328,7 @@ function ModpackSearch({ onSelect }: ModpackSearchProps) {
             type="text"
             value={filters.query}
             onChange={(e) => setFilter("query", e.target.value)}
-            placeholder="Szukaj paczek modów..."
+            placeholder={t("modpackSearch.searchPlaceholder")}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
           />
           {filters.query && (
@@ -342,14 +346,13 @@ function ModpackSearch({ onSelect }: ModpackSearchProps) {
 
       {/* Note about fabric-only */}
       <p className="text-xs text-muted-foreground/60 px-1">
-        Wyświetlane są tylko paczki modów dla <span className="text-emerald-400">Fabric</span>
+        {t("modpackSearch.fabricOnly")}
       </p>
 
       {/* Results info */}
       {!loading && !error && results.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          Znaleziono {totalHits} paczek modów
-          {filters.query && <> dla "<span className="text-foreground">{filters.query}</span>"</>}
+          {t("search.resultsFor", { count: totalHits, query: filters.query })}
         </p>
       )}
 
@@ -372,7 +375,7 @@ function ModpackSearch({ onSelect }: ModpackSearchProps) {
         <div className="flex items-center justify-center py-8">
           <div className="flex flex-col items-center gap-3">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-            <p className="text-xs text-muted-foreground">Szukanie paczek modów...</p>
+            <p className="text-xs text-muted-foreground">{t("search.loading")}</p>
           </div>
         </div>
       )}
@@ -390,8 +393,8 @@ function ModpackSearch({ onSelect }: ModpackSearchProps) {
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
           </svg>
-          <p className="text-sm text-muted-foreground">Wpisz nazwę paczki modów, aby rozpocząć wyszukiwanie</p>
-          <p className="text-xs text-muted-foreground/60">Dostępne przez API Modrinth</p>
+          <p className="text-sm text-muted-foreground">{t("modpackSearch.startHint")}</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.startHintSub")}</p>
         </div>
       )}
 
@@ -401,8 +404,8 @@ function ModpackSearch({ onSelect }: ModpackSearchProps) {
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
-          <p className="text-sm text-muted-foreground">Brak wyników dla "<span className="text-foreground">{filters.query}</span>"</p>
-          <p className="text-xs text-muted-foreground/60">Spróbuj innego zapytania</p>
+          <p className="text-sm text-muted-foreground">{t("search.noResults", { query: filters.query })}</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.noResultsHint")}</p>
         </div>
       )}
     </div>

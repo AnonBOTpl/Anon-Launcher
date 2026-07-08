@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
@@ -71,7 +72,7 @@ export function useCrashReports(instanceName?: string): UseCrashReportsReturn {
         }
       } catch (err) {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : "Failed to load crash reports";
+          const message = err instanceof Error ? err.message : i18n.t("crash.loadError");
           setError(message);
           setReports([]);
         }
@@ -166,7 +167,7 @@ export function useCrashReports(instanceName?: string): UseCrashReportsReturn {
       const result = await listCrashReports(instanceName);
       setReports(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load crash reports";
+      const message = err instanceof Error ? err.message : i18n.t("crash.loadError");
       setError(message);
       setReports([]);
     } finally {
@@ -189,7 +190,7 @@ export function useCrashReports(instanceName?: string): UseCrashReportsReturn {
         const content = await readCrashReport(instanceName, filename);
         setSelectedContent(content);
       } catch {
-        setSelectedContent("// Failed to load crash report content");
+        setSelectedContent(`// ${i18n.t("crash.loadError")}`);
       } finally {
         setContentLoading(false);
       }
@@ -212,7 +213,7 @@ export function useCrashReports(instanceName?: string): UseCrashReportsReturn {
         // Refresh the list
         await refresh();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to delete crash report";
+        const message = err instanceof Error ? err.message : i18n.t("crash.deleteError");
         setError(message);
       }
     },
@@ -230,7 +231,7 @@ export function useCrashReports(instanceName?: string): UseCrashReportsReturn {
       setReports([]);
       setHasNewCrash(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete crash reports";
+      const message = err instanceof Error ? err.message : i18n.t("crash.deleteAllError");
       setError(message);
     }
   }, [instanceName]);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -40,6 +41,7 @@ const FORBIDDEN_CHARS = /[<>:"/\\|?*\x00-\x1f]/;
 const MAX_NAME_LENGTH = 64;
 
 function CreateInstanceForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -97,29 +99,29 @@ function CreateInstanceForm() {
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      newErrors.name = "Nazwa instancji jest wymagana";
+      newErrors.name = t("create.errors.nameRequired");
     } else if (trimmedName.length > MAX_NAME_LENGTH) {
-      newErrors.name = `Nazwa może mieć maksymalnie ${MAX_NAME_LENGTH} znaków`;
+      newErrors.name = t("create.errors.nameMaxLength", { max: MAX_NAME_LENGTH });
     } else if (FORBIDDEN_CHARS.test(trimmedName)) {
-      newErrors.name = "Nazwa zawiera niedozwolone znaki (<>:\"/\\|?*)";
+      newErrors.name = t("create.errors.nameForbiddenChars");
     } else if (trimmedName.length < 2) {
-      newErrors.name = "Nazwa musi mieć co najmniej 2 znaki";
+      newErrors.name = t("create.errors.nameMinLength");
     }
 
     if (!mcVersion) {
-      newErrors.mcVersion = "Wybierz wersję Minecraft";
+      newErrors.mcVersion = t("create.errors.mcVersionRequired");
     }
 
     if (loader === "fabric") {
       if (!loaderVersion) {
-        newErrors.loaderVersion = "Wybierz wersję Fabric loadera";
+        newErrors.loaderVersion = t("create.errors.loaderVersionRequired");
       }
     }
 
     if (!Number.isFinite(ram) || ram < 1024) {
-      newErrors.ram = "RAM musi wynosić co najmniej 1024 MB (1 GB)";
+      newErrors.ram = t("create.errors.ramMin");
     } else if (ram > 65536) {
-      newErrors.ram = "RAM nie może przekraczać 65536 MB (64 GB)";
+      newErrors.ram = t("create.errors.ramMax");
     }
 
     setErrors(newErrors);
@@ -139,13 +141,13 @@ function CreateInstanceForm() {
     }
 
     if (!modpackSelection) {
-      newErrors.general = "Wybierz paczkę modów";
+      newErrors.general = t("create.errors.modpackRequired");
     }
 
     if (!Number.isFinite(ram) || ram < 1024) {
-      newErrors.ram = "RAM musi wynosić co najmniej 1024 MB (1 GB)";
+      newErrors.ram = t("create.errors.ramMin");
     } else if (ram > 65536) {
-      newErrors.ram = "RAM nie może przekraczać 65536 MB (64 GB)";
+      newErrors.ram = t("create.errors.ramMax");
     }
 
     setErrors(newErrors);
@@ -181,7 +183,7 @@ function CreateInstanceForm() {
       } else {
         // Modpack mode — show progress dialog (async via events)
         if (!modpackSelection) {
-          setErrors({ general: "Wybierz paczkę modów" });
+          setErrors({ general: t("create.errors.modpackRequired") });
           setSubmitting(false);
           return;
         }
@@ -250,7 +252,7 @@ function CreateInstanceForm() {
       navigate("/");
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Nie udało się utworzyć instancji";
+        err instanceof Error ? err.message : t("create.errors.createFailed");
       setErrors({ general: message });
     } finally {
       setSubmitting(false);
@@ -287,7 +289,7 @@ function CreateInstanceForm() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
                 </svg>
-                Ręczna konfiguracja
+                {t("create.manualConfig")}
               </div>
             </button>
             <button
@@ -306,7 +308,7 @@ function CreateInstanceForm() {
                   <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                   <line x1="12" y1="22.08" x2="12" y2="12" />
                 </svg>
-                Z modpacka
+                {t("create.fromModpack")}
               </div>
             </button>
           </div>
@@ -316,24 +318,24 @@ function CreateInstanceForm() {
       {/* Basic info — name is always shown */}
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium leading-none">
-              {creationMode === "manual" ? "Podstawowe informacje" : "Instancja z modpacka"}
+          <div className="space-y-1">              <h3 className="text-sm font-medium leading-none">
+              {creationMode === "manual" ? t("create.basicInfo") : t("create.modpackInfo")}
             </h3>
             <p className="text-xs text-muted-foreground">
               {creationMode === "manual"
-                ? "Nazwij swoją instancję i wybierz wersję gry"
-                : "Wyszukaj paczkę modów do utworzenia instancji"}
+                ? t("create.basicInfoDesc")
+                : t("create.modpackInfoDesc")
+            }
             </p>
           </div>
           <Separator />
 
           {/* Instance name */}
           <div className="space-y-2">
-            <Label htmlFor="instance-name">Nazwa instancji</Label>
+            <Label htmlFor="instance-name">{t("create.name")}</Label>
             <Input
               id="instance-name"
-              placeholder={creationMode === "manual" ? "np. Fabric 1.21 Survival" : "Nazwa z modpacka (możesz zmienić)"}
+              placeholder={creationMode === "manual" ? t("create.namePlaceholder") : t("create.nameModpackPlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={MAX_NAME_LENGTH}
@@ -369,9 +371,9 @@ function CreateInstanceForm() {
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-1">
-              <h3 className="text-sm font-medium leading-none">Loader</h3>
+              <h3 className="text-sm font-medium leading-none">{t("create.loader")}</h3>
               <p className="text-xs text-muted-foreground">
-                Wybierz typ loadera i jego wersję
+                {t("create.loaderDesc")}
               </p>
             </div>
             <Separator />
@@ -392,9 +394,9 @@ function CreateInstanceForm() {
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-medium leading-none">Konfiguracja</h3>
+            <h3 className="text-sm font-medium leading-none">{t("create.configuration")}</h3>
             <p className="text-xs text-muted-foreground">
-              Ustawienia pamięci i środowiska
+              {t("create.configurationDesc")}
             </p>
           </div>
           <Separator />
@@ -402,7 +404,7 @@ function CreateInstanceForm() {
           {/* RAM slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="ram">Pamięć RAM</Label>
+              <Label htmlFor="ram">{t("create.ram")}</Label>
               <span className="text-sm font-mono tabular-nums text-muted-foreground">
                 {(ram / 1024).toFixed(1)} GB
               </span>
@@ -426,7 +428,7 @@ function CreateInstanceForm() {
 
           {/* Java version */}
           <div className="space-y-2">
-            <Label>Wersja Java</Label>
+            <Label>{t("create.java")}</Label>
             <JavaSettings
               versions={versions}
               value={javaVersion}
@@ -440,7 +442,7 @@ function CreateInstanceForm() {
             {downloadStatus?.success && (
               <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5">
                 <p className="text-xs text-emerald-400">
-                  ✓ Java {downloadStatus.version} pobrana pomyślnie!
+                  ✓ {t("create.javaDownloaded", { version: downloadStatus.version })}
                 </p>
               </div>
             )}
@@ -448,7 +450,7 @@ function CreateInstanceForm() {
 
           {/* JVM Arguments */}
           <div className="space-y-2">
-            <Label htmlFor="jvm-args">Argumenty JVM (opcjonalne)</Label>
+            <Label htmlFor="jvm-args">{t("create.jvmArgs")}</Label>
             <Input
               id="jvm-args"
               placeholder="-Dfml.ignoreInvalidMinecraftCertificates=true"
@@ -456,7 +458,7 @@ function CreateInstanceForm() {
               onChange={(e) => setJvmArgs(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Dodatkowe argumenty przekazywane do maszyny wirtualnej Javy
+              {t("create.jvmArgsDesc")}
             </p>
           </div>
         </CardContent>
@@ -470,16 +472,16 @@ function CreateInstanceForm() {
           onClick={() => navigate("/")}
           disabled={submitting}
         >
-          Anuluj
+          {t("create.cancel")}
         </Button>
         <Button type="submit" disabled={submitting}>
           {submitting ? (
             <>
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-              {creationMode === "manual" ? "Tworzenie..." : "Pobieranie modpacka..."}
+              {creationMode === "manual" ? t("create.creating") : t("create.downloadingModpack")}
             </>
           ) : (
-            creationMode === "manual" ? "Utwórz instancję" : "Utwórz z modpacka"
+            creationMode === "manual" ? t("create.submit") : t("create.submitModpack")
           )}
         </Button>
       </div>
@@ -501,17 +503,17 @@ function CreateInstanceForm() {
           <DialogHeader>
             <DialogTitle>
               {modpackError
-                ? "Błąd instalacji"
+                ? t("create.modpackError")
                 : modpackSuccess
-                  ? "Instalacja zakończona"
-                  : "Instalowanie modpacka"}
+                  ? t("create.modpackDone")
+                  : t("create.installingModpack")}
             </DialogTitle>
             <DialogDescription>
               {modpackError
-                ? "Nie udało się utworzyć instancji z modpacka."
+                ? t("create.modpackErrorDesc")
                 : modpackSuccess
-                  ? "Instancja została pomyślnie utworzona!"
-                  : `Tworzenie instancji z modpacka...`}
+                  ? t("create.modpackDoneDesc")
+                  : t("create.installingModpackDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -533,7 +535,7 @@ function CreateInstanceForm() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
-                  Instancja gotowa — za chwilę nastąpi przekierowanie...
+                  {t("create.modpackRedirect")}
                 </div>
               </div>
             )}
@@ -562,7 +564,7 @@ function CreateInstanceForm() {
                   <div className="flex items-center gap-2 text-muted-foreground min-w-0">
                     <div className="h-4 w-4 animate-spin shrink-0 rounded-full border-2 border-muted border-t-purple-500" />
                     <span className="truncate max-w-[280px]">
-                      {modpackProgress?.message ?? "Przygotowywanie..."}
+                      {modpackProgress?.message ?? t("create.preparing")}
                     </span>
                   </div>
                   {modpackProgress?.phase === "downloading_files" && modpackProgress.total > 0 && (
@@ -590,7 +592,7 @@ function CreateInstanceForm() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
                       <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                     </svg>
-                    Anuluj instalację
+                    {t("create.cancelInstall")}
                   </Button>
                 </div>
               </div>

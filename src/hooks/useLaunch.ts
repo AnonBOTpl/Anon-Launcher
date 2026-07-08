@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -172,7 +173,7 @@ export function useLaunch(instanceName?: string): UseLaunchReturn {
             exitCode: event.payload.exitCode ?? null,
           });
           // Add final log line
-          const endText = `\n--- Gra zakończona (kod: ${event.payload.exitCode ?? "?"}) ---`;
+          const endText = `\n--- ${i18n.t("console.gameExited", { code: event.payload.exitCode ?? "?" })} ---`;
           setLogs((prev) => [
             ...prev,
             {
@@ -206,7 +207,7 @@ export function useLaunch(instanceName?: string): UseLaunchReturn {
       args: string[],
     ) => {
       setStatus({ type: "launching" });
-      const launchText = `[INFO] Uruchamianie: ${javaPath}`;
+      const launchText = `[INFO] ${i18n.t("launch.launchingWithPath", { path: javaPath })}`;
       setLogs((prev) => [
         ...prev,
         {
@@ -230,7 +231,7 @@ export function useLaunch(instanceName?: string): UseLaunchReturn {
 
         if (result.success && result.pid) {
           setStatus({ type: "running", pid: result.pid });
-          const pidText = `[INFO] Proces uruchomiony (PID: ${result.pid})`;
+          const pidText = `[INFO] ${i18n.t("console.processRunning", { pid: result.pid })}`;
           setLogs((prev) => [
             ...prev,
             {
@@ -242,11 +243,11 @@ export function useLaunch(instanceName?: string): UseLaunchReturn {
             },
           ]);
         } else {
-          setStatus({ type: "error", message: result.error || "Nieznany błąd" });
+          setStatus({ type: "error", message: result.error || i18n.t("errors.unknown") });
         }
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Nie udało się uruchomić gry";
+          err instanceof Error ? err.message : i18n.t("errors.launchFailed");
         setStatus({ type: "error", message });
         const errText = `[ERROR] ${message}`;
         setLogs((prev) => [

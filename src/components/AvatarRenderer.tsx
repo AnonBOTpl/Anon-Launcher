@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAvatar } from "@/hooks/useAvatar";
 
@@ -18,6 +19,7 @@ interface AvatarRendererProps {
  * Falls back to Steve if no UUID provided or on error.
  */
 function AvatarRenderer({ uuid, size = 64, showBody = true, className }: AvatarRendererProps) {
+  const { t } = useTranslation();
   const { avatarUrl, bodyUrl, loading, error } = useAvatar(uuid);
 
   return (
@@ -77,7 +79,7 @@ function AvatarRenderer({ uuid, size = 64, showBody = true, className }: AvatarR
               <path d="M20 21a8 8 0 1 0-16 0" />
             </svg>
           </div>
-          <p className="text-[10px] text-muted-foreground">Steve (fallback)</p>
+          <p className="text-[10px] text-muted-foreground">{t("common.fallback")}</p>
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import i18n from "@/lib/i18n";
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { InstanceManifest } from "@/types/instance";
@@ -22,7 +23,7 @@ export function useInstances(): UseInstancesResult {
       const result = await invoke<InstanceManifest[]>("list_instances");
       setInstances(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load instances");
+      setError(err instanceof Error ? err.message : i18n.t("errors.loadFailed"));
     } finally {
       setLoading(false);
     }

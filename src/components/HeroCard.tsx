@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { InstanceManifest } from "@/types/instance";
 import { cn } from "@/lib/utils";
 import { LaunchButton } from "@/components/LaunchButton";
@@ -33,6 +34,7 @@ const loaderBadge: Record<string, { label: string; color: string }> = {
 };
 
 function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdated, onDeleted, onOpenConsole }: HeroCardProps) {
+  const { t } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
@@ -133,7 +135,7 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
                   ? "text-muted-foreground/20 cursor-not-allowed"
                   : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
               )}
-              title={isRunning ? "Niedostępne podczas gry" : "Edytuj"}
+              title={isRunning ? t("instance.unavailableWhileRunning") : t("instance.edit")}
               disabled={isRunning}
             >
               <svg
@@ -161,7 +163,7 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
                   ? "text-muted-foreground/20 cursor-not-allowed"
                   : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
               )}
-              title={isRunning ? "Niedostępne podczas gry" : "Klonuj"}
+              title={isRunning ? t("instance.unavailableWhileRunning") : t("instance.clone")}
               disabled={isRunning}
             >
               <svg
@@ -189,7 +191,7 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
                   ? "text-muted-foreground/20 cursor-not-allowed"
                   : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
               )}
-              title={isRunning ? "Niedostępne podczas gry" : "Eksportuj ZIP"}
+              title={isRunning ? t("instance.unavailableWhileRunning") : t("instance.export")}
               disabled={isRunning}
             >
               <svg
@@ -224,7 +226,7 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
                   ? "text-muted-foreground/20 cursor-not-allowed"
                   : "text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10",
               )}
-              title={isRunning ? "Niedostępne podczas gry" : "Usuń"}
+              title={isRunning ? t("instance.unavailableWhileRunning") : t("instance.delete")}
               disabled={isRunning}
             >
               <svg
@@ -249,7 +251,7 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
               <button
                 onClick={onOpenConsole}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
-                title="Otwórz konsolę"
+                title={t("instance.console")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

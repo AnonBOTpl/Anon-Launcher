@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import type { LogLine, LogCategory, LogLevel } from "@/hooks/useLaunch";
 import { cn } from "@/lib/utils";
 
@@ -7,13 +8,6 @@ interface GameConsoleProps {
   onClear?: () => void;
   maxHeight?: string;
 }
-
-/** Tab configuration */
-const TABS: { key: LogCategory; label: string }[] = [
-  { key: "all", label: "Wszystkie" },
-  { key: "fabric", label: "Fabric" },
-  { key: "engine", label: "Silnik" },
-];
 
 /** Level filter buttons */
 const LEVEL_FILTERS: { key: LogLevel; label: string }[] = [
@@ -57,7 +51,14 @@ function isScrolledToBottom(el: HTMLElement, threshold = 30): boolean {
  * categorized tabs (All / Fabric / Engine), level filtering,
  * and text search.
  */
+const TABS_KEYS: { key: LogCategory; labelKey: string }[] = [
+  { key: "all", labelKey: "console.filterAll" },
+  { key: "fabric", labelKey: "console.filterFabric" },
+  { key: "engine", labelKey: "console.filterEngine" },
+];
+
 export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleProps) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -139,7 +140,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                 logs.length > 0 ? "bg-emerald-500 animate-pulse" : "bg-purple-500",
               )}
             />
-            <span className="text-sm font-medium text-foreground">Konsola</span>
+            <span className="text-sm font-medium text-foreground">{t("console.title")}</span>
             <span className="text-xs text-muted-foreground">
               {hasFilters
                 ? `${filteredCount}/${totalCount} linii`
@@ -156,7 +157,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                   ? "bg-purple-500/15 text-purple-400 hover:bg-purple-500/25"
                   : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
-              title={autoScroll ? "Auto-scroll włączony" : "Auto-scroll wyłączony"}
+              title={autoScroll ? "Auto-scroll enabled" : "Auto-scroll disabled"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -171,14 +172,14 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
-              {autoScroll ? "Auto" : "Ręczny"}
+              {autoScroll ? t("console.autoscroll") : t("console.manual")}
             </button>
             {/* Clear */}
             {onClear && (
               <button
                 onClick={onClear}
                 className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-                title="Wyczyść konsolę"
+                title={t("console.clear")}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +195,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                   <path d="M3 6h18" />
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                 </svg>
-                Wyczyść
+                {t("console.clear")}
               </button>
             )}
           </div>
@@ -204,7 +205,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
         <div className="flex items-center gap-3 px-4 pb-2.5 flex-wrap">
           {/* Tabs */}
           <div className="flex items-center gap-1">
-            {TABS.map((tab) => {
+            {TABS_KEYS.map((tab) => {
               const count = tab.key === "all"
                 ? logs.length
                 : logs.filter((l) => l.category === tab.key).length;
@@ -219,7 +220,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                   )}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                   <span className="ml-1 text-[10px] opacity-60">({count})</span>
                 </button>
               );
@@ -272,7 +273,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Szukaj... (Ctrl+F)"
+              placeholder={`${t("console.search")} (Ctrl+F)`}
               className="w-40 h-7 rounded-lg bg-muted/50 border border-border/50 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
             />
             {searchQuery && (
@@ -308,7 +309,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
       >
         {logs.length === 0 ? (
           <p className="text-purple-400/60 italic text-center py-8">
-            Konsola gotowa — uruchom instancję aby zobaczyć logi.
+            {t("console.ready")}
           </p>
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/50">
@@ -327,7 +328,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
             </svg>
-            <p className="text-xs italic">Brak pasujących linii dla wybranych filtrów</p>
+            <p className="text-xs italic">{t("console.noMatches")}</p>
           </div>
         ) : (
           filteredLogs.map((line, i) => {
@@ -373,7 +374,7 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
             }}
             className="sticky bottom-2 left-1/2 -translate-x-1/2 mt-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px] font-medium hover:bg-purple-500/30 transition-all shadow-lg backdrop-blur-sm"
           >
-            ⬇ Nowe logi — kliknij, aby przewinąć
+            ⬇ {t("console.newLogs")}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSnapshots } from "@/hooks/useSnapshots";
 import { formatSnapshotSize } from "@/lib/snapshot";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ interface SnapshotListProps {
 }
 
 export default function SnapshotList({ instanceName, disabled }: SnapshotListProps) {
+  const { t } = useTranslation();
   const { snapshots, loading, error, creating, create, remove, restore, restoring } =
     useSnapshots(instanceName);
 
@@ -62,9 +64,9 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-sm font-medium text-amber-400">{t("runningBlocked.gameRunning")}</p>
               <p className="text-xs text-amber-400/70 mt-0.5">
-                Zarządzanie snapshotami jest zablokowane podczas gry. Zatrzymaj instancję, aby tworzyć lub przywracać snapshoty.
+                {t("snapshots.blockedBanner")}
               </p>
             </div>
           </div>
@@ -84,8 +86,8 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
               : "border-input bg-background focus:border-ring",
           )}
         >
-          <option value="full">Pełna kopia</option>
-          <option value="metadata">Tylko metadane</option>
+          <option value="full">{t("snapshots.modeFull")}</option>
+          <option value="metadata">{t("snapshots.modeMeta")}</option>
         </select>
         <Button
           size="sm"
@@ -101,14 +103,14 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
           {creating ? (
             <>
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-white mr-1.5" />
-              Tworzenie...
+              {t("snapshots.creating")}
             </>
           ) : (
             <>
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Utwórz snapshot
+              {t("snapshots.create")}
             </>
           )}
         </Button>
@@ -141,9 +143,9 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <path d="M11 19l-7-7 7-7" /><path d="M18 19l-7-7 7-7" />
           </svg>
-          <p className="text-sm text-muted-foreground">Brak snapshotów</p>
+          <p className="text-sm text-muted-foreground">{t("snapshots.noSnapshots")}</p>
           <p className="text-xs text-muted-foreground/60">
-            Utwórz snapshot, aby zabezpieczyć instancję przed aktualizacjami
+            {t("snapshots.emptyHint")}
           </p>
         </div>
       )}
@@ -184,14 +186,14 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
-                  {snapshot.mode === "full" ? "Pełna kopia" : "Tylko metadane"}
+                  {snapshot.mode === "full" ? t("snapshots.modeFull") : t("snapshots.modeMeta")}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {snapshot.createdAt}
                   {" · "}
                   {formatSnapshotSize(snapshot.sizeBytes)}
                   {" · "}
-                  {snapshot.modCount} modów
+                  {t("snapshots.modsCount", { count: snapshot.modCount })}
                 </p>
               </div>
 
@@ -207,7 +209,7 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
                     })
                   }
                   disabled={disabled}
-                  title={disabled ? "Niedostępne podczas gry" : "Przywróć snapshot"}
+                  title={disabled ? t("snapshots.unavailable") : t("snapshots.restore")}
                   className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
                     disabled
@@ -224,7 +226,7 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
                 {disabled ? (
                   <button
                     disabled
-                    title="Niedostępne podczas gry"
+                    title={t("snapshots.unavailable")}
                     className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -239,7 +241,7 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
                       onClick={() => handleDelete(snapshot.timestamp)}
                       className="h-7 text-xs px-2"
                     >
-                      Usuń
+                      {t("snapshots.delete")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -247,13 +249,13 @@ export default function SnapshotList({ instanceName, disabled }: SnapshotListPro
                       onClick={() => setConfirmDelete(null)}
                       className="h-7 text-xs px-2"
                     >
-                      Anuluj
+                      {t("snapshots.cancel")}
                     </Button>
                   </div>
                 ) : (
                   <button
                     onClick={() => setConfirmDelete(snapshot.timestamp)}
-                    title="Usuń snapshot"
+                    title={t("snapshots.delete")}
                     className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

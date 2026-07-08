@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -14,11 +15,6 @@ import * as modApi from "@/lib/mod-installer";
 import { getProject, getProjectVersions } from "@/lib/modrinth";
 
 
-interface Tab {
-  id: string;
-  label: string;
-}
-
 interface InstanceTabsProps {
   logs?: LogLine[];
   onClearLogs?: () => void;
@@ -30,17 +26,8 @@ interface InstanceTabsProps {
   isRunning?: boolean;
 }
 
-const TABS: Tab[] = [
-  { id: "gra", label: "Gra" },
-  { id: "mody", label: "Mody" },
-  { id: "resourcepacks", label: "Paczki zasobów" },
-  { id: "shaders", label: "Shadery" },
-  { id: "snapshoty", label: "Snapshoty" },
-  { id: "logi", label: "Logi" },
-  { id: "crash", label: "Crash" },
-];
-
 function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, isRunning }: InstanceTabsProps) {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const instanceName = id ? decodeURIComponent(id) : null;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -147,7 +134,17 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
   // When hasNewCrash changes from parent, sync to our dismiss
   // (the parent sets hasNewCrash from the hook, we just display it)
 
-  const visibleTabs = TABS.filter((tab) => {
+  const tabs = [
+    { id: "gra", label: t("instance.tabs.game") },
+    { id: "mody", label: t("instance.tabs.mods") },
+    { id: "resourcepacks", label: t("instance.tabs.resourcepacks") },
+    { id: "shaders", label: t("instance.tabs.shaders") },
+    { id: "snapshoty", label: t("instance.tabs.snapshots") },
+    { id: "logi", label: t("instance.tabs.logs") },
+    { id: "crash", label: t("instance.tabs.crash") },
+  ];
+
+  const visibleTabs = tabs.filter((tab) => {
     if (tab.id === "mody" && instanceLoader === "vanilla") return false;
     if (tab.id === "shaders" && instanceLoader === "vanilla") return false;
     return true;
@@ -175,7 +172,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Wybierz instancję, aby zarządzać modami.
+                {t("instance.tabs.mods")}
               </p>
             )}
           </div>
@@ -187,7 +184,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
               <ContentList instanceName={instanceName} folder="resourcepacks" disabled={isRunning} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Wybierz instancję, aby zarządzać paczkami zasobów.
+                {t("instance.tabs.resourcepacks")}
               </p>
             )}
           </div>
@@ -205,7 +202,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Wybierz instancję, aby zarządzać shaderpackami.
+                {t("instance.tabs.shaders")}
               </p>
             )}
           </div>
@@ -223,7 +220,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
               <SnapshotList instanceName={instanceName} disabled={isRunning} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Wybierz instancję, aby zarządzać snapshotami.
+                {t("instance.tabs.snapshots")}
               </p>
             )}
           </div>
@@ -250,7 +247,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Wybierz instancję, aby zobaczyć raporty awarii.
+                {t("instance.tabs.crash")}
               </p>
             )}
           </div>

@@ -5,6 +5,7 @@ export interface DownloadProgress {
   status: string;
 }
 
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -31,6 +32,7 @@ function InstanceView() {
   const { status: launchStatus, launch, stop, logs, clearLogs } = useLaunch(instanceName ?? undefined);
   const crashReportsHook = useCrashReports(instanceName ?? undefined);
   const [canLaunch, setCanLaunch] = useState(true);
+  const { t } = useTranslation();
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [gameDir, setGameDir] = useState("");
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
@@ -133,7 +135,7 @@ function InstanceView() {
 
     setLaunchError(null);
     // Show initial preparing state
-    setDownloadProgress({ phase: "client", current: 0, total: 1, status: "Przygotowywanie..." });
+    setDownloadProgress({ phase: "client", current: 0, total: 1, status: t("launch.preparing") });
 
     try {
       const javaVersion = getJavaVersionForMc(manifest.mcVersion);
@@ -146,7 +148,7 @@ function InstanceView() {
 
       if (loaderArg && !loaderArg.version) {
         setDownloadProgress(null);
-        setLaunchError("Brak wybranej wersji Fabric. Otwórz Edytuj i wybierz wersję loadera.");
+        setLaunchError(t("errors.noFabricVersion"));
         return;
       }
 
@@ -167,7 +169,7 @@ function InstanceView() {
       // race conditions where the thread finishes before listeners register.
 
       // Download client jar
-      setDownloadProgress({ phase: "client", current: 0, total: 2, status: "Pobieranie client.jar..." });
+      setDownloadProgress({ phase: "client", current: 0, total: 2, status: t("launch.downloadingClient") });
       const dlClient = waitForDownload("client");
       invoke("download_client_jar", {
         mcVersion: manifest.mcVersion,
@@ -199,7 +201,7 @@ function InstanceView() {
       }
 
       // Download assets (index + objects)
-      setDownloadProgress({ phase: "assets", current: 0, total: 1, status: "Pobieranie assetów..." });
+      setDownloadProgress({ phase: "assets", current: 0, total: 1, status: t("launch.downloadingAssets") });
       const dlAssets = waitForDownload("assets");
       invoke("download_assets", { index: resolved.assetIndex });
       await dlAssets;
@@ -208,7 +210,7 @@ function InstanceView() {
       const session = await tryRefreshSession();
       if (!session) {
         setDownloadProgress(null);
-        setLaunchError("Nie masz zalogowanego konta Microsoft. Zaloguj się przez przycisk w sidebarze.");
+        setLaunchError(t("errors.loginRequired"));
         return;
       }
 
@@ -243,7 +245,7 @@ function InstanceView() {
       } else if (err && typeof err === "object" && "message" in err) {
         message = String((err as { message: unknown }).message);
       } else {
-        message = String(err) || "Nieznany błąd podczas uruchamiania";
+        message = String(err) || t("errors.unknown");
       }
       setDownloadProgress(null);
       setLaunchError(message);
@@ -255,7 +257,7 @@ function InstanceView() {
   useEffect(() => {
     if (!instanceName) {
       setLoading(false);
-      setError("Brak nazwy instancji");
+      setError(t("errors.noInstance"));
       return;
     }
 
@@ -273,7 +275,7 @@ function InstanceView() {
         setError(
           err instanceof Error
             ? err.message
-            : "Nie udało się wczytać instancji"
+            : t("errors.loadFailed")
         );
         setLoading(false);
       });
@@ -300,7 +302,7 @@ function InstanceView() {
     const url = `/#/console/${encodeURIComponent(name)}`;
     const webview = new WebviewWindow(label, {
       url,
-      title: `Konsola - ${name}`,
+      title: `${t("console.title")} - ${name}`,
       width: 800,
       height: 600,
       minWidth: 500,
@@ -331,7 +333,7 @@ function InstanceView() {
       <div className="min-h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-purple-500" />
-          <p className="text-sm text-muted-foreground">Ładowanie instancji...</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.loading")}</p>
         </div>
       </div>
     );
@@ -360,9 +362,9 @@ function InstanceView() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Instancja nie znaleziona</h2>
+          <h2 className="text-xl font-semibold">{t("instance.notFound")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {error || `Instancja "${instanceName}" nie istnieje na dysku.`}
+            {error || t("instance.notFoundHint", { name: instanceName })}
           </p>
           <button
             onClick={() => navigate("/")}
@@ -381,7 +383,7 @@ function InstanceView() {
             >
               <path d="m15 18-6-6 6-6" />
             </svg>
-            Powrót do Dashboardu
+            {t("instance.backToDashboard")}
           </button>
         </div>
       </div>
@@ -410,7 +412,7 @@ function InstanceView() {
           >
             <path d="m15 18-6-6 6-6" />
           </svg>
-          Powrót
+          {t("instance.back")}
         </button>
 
         {/* Empty spacer to keep Powrót left-aligned */}
@@ -482,7 +484,7 @@ function InstanceView() {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-destructive">Błąd uruchamiania</p>
+                <p className="text-sm font-medium text-destructive">{t("launch.launchError")}</p>
                 <p className="mt-1 text-sm text-destructive/80">{launchError}</p>
               </div>
               <button
@@ -547,13 +549,12 @@ function InstanceView() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-destructive">
-                  Minecraft zakończył działanie z błędem
+                  {t("crash.detected")}
                 </p>
                 <p className="mt-0.5 text-sm text-destructive/80">
-                  Wykryto {crashReportsHook.reports.length} crash report
-                  {crashReportsHook.reports.length !== 1 ? "y" : ""}.
+                  {t("crash.detectedCount", { count: crashReportsHook.reports.length })}
                   {crashReportsHook.selectedReport
-                    ? " Otwieram podgląd najnowszego raportu."
+                    ? t("crash.viewDetails")
                     : ""}
                 </p>
               </div>
@@ -587,7 +588,7 @@ function InstanceView() {
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
-                  Zobacz szczegóły
+                  {t("crash.viewDetails")}
                 </button>
                 <button
                   onClick={() => setCrashBannerDismissed(true)}

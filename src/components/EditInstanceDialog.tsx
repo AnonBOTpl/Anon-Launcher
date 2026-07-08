@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import type { InstanceManifest } from "@/types/instance";
 import {
@@ -42,6 +43,7 @@ function EditInstanceDialog({
   onOpenChange,
   onUpdated,
 }: EditInstanceDialogProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ function EditInstanceDialog({
   const recommendedJava = mcVersion ? getJavaVersionForMc(mcVersion) : null;
   const javaMismatch =
     recommendedJava && javaVersion !== recommendedJava
-      ? `Minecraft ${mcVersion} zaleca ${JAVA_LABELS[recommendedJava] ?? `Java ${recommendedJava}`}`
+      ? t("edit.javaMismatch", { mcVersion, javaLabel: JAVA_LABELS[recommendedJava] ?? `Java ${recommendedJava}` })
       : null;
 
   // Auto-update Java when MC version changes (only if not manually set)
@@ -98,7 +100,7 @@ function EditInstanceDialog({
       })
       .catch((err) => {
         setError(
-          err instanceof Error ? err.message : "Nie udało się wczytać instancji"
+          err instanceof Error ? err.message : t("edit.errors.loadFailed")
         );
         setLoading(false);
       });
@@ -109,27 +111,27 @@ function EditInstanceDialog({
     const trimmed = name.trim();
 
     if (!trimmed) {
-      errors.name = "Nazwa instancji jest wymagana";
+      errors.name = t("create.errors.nameRequired");
     } else if (trimmed.length > MAX_NAME_LENGTH) {
-      errors.name = `Nazwa może mieć maksymalnie ${MAX_NAME_LENGTH} znaków`;
+      errors.name = t("create.errors.nameMaxLength", { max: MAX_NAME_LENGTH });
     } else if (FORBIDDEN_CHARS.test(trimmed)) {
-      errors.name = "Nazwa zawiera niedozwolone znaki (<>:\"/\\|?*)";
+      errors.name = t("create.errors.nameForbiddenChars");
     } else if (trimmed.length < 2) {
-      errors.name = "Nazwa musi mieć co najmniej 2 znaki";
+      errors.name = t("create.errors.nameMinLength");
     }
 
     if (!mcVersion) {
-      errors.mcVersion = "Wybierz wersję Minecraft";
+      errors.mcVersion = t("create.errors.mcVersionRequired");
     }
 
     if (loader === "fabric" && !loaderVersion) {
-      errors.loaderVersion = "Wybierz wersję Fabric loadera";
+      errors.loaderVersion = t("create.errors.loaderVersionRequired");
     }
 
     if (!Number.isFinite(ram) || ram < 1024) {
-      errors.ram = "RAM musi wynosić co najmniej 1024 MB";
+      errors.ram = t("create.errors.ramMin");
     } else if (ram > 65536) {
-      errors.ram = "RAM nie może przekraczać 65536 MB";
+      errors.ram = t("create.errors.ramMax");
     }
 
     setFieldErrors(errors);
@@ -163,7 +165,7 @@ function EditInstanceDialog({
       onUpdated?.();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Nie udało się zapisać zmian"
+        err instanceof Error ? err.message : t("edit.errors.saveFailed")
       );
     } finally {
       setSaving(false);
@@ -174,10 +176,9 @@ function EditInstanceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edytuj instancję</DialogTitle>
+          <DialogTitle>{t("edit.title")}</DialogTitle>
           <DialogDescription>
-            Zmień ustawienia instancji. Pola są wstępnie wypełnione aktualnymi
-            wartościami.
+            {t("edit.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -193,7 +194,7 @@ function EditInstanceDialog({
           <div className="space-y-5">
             {/* Instance name */}
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Nazwa instancji</Label>
+              <Label htmlFor="edit-name">{t("create.name")}</Label>
               <Input
                 id="edit-name"
                 value={name}
@@ -218,7 +219,7 @@ function EditInstanceDialog({
               error={fieldErrors.mcVersion}
             />
             <p className="text-xs text-muted-foreground -mt-3">
-              Zmiana wersji spowoduje pobranie nowych plików przy następnym uruchomieniu
+              {t("edit.versionChangeHint")}
             </p>
 
             {/* Loader + Loader version */}
@@ -236,7 +237,7 @@ function EditInstanceDialog({
             {/* RAM slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="edit-ram">Pamięć RAM</Label>
+                <Label htmlFor="edit-ram">{t("create.ram")}</Label>
                 <span className="text-sm font-mono tabular-nums text-muted-foreground">
                   {(ram / 1024).toFixed(1)} GB
                 </span>
@@ -262,7 +263,7 @@ function EditInstanceDialog({
 
             {/* Java version */}
             <div className="space-y-2">
-              <Label htmlFor="edit-java">Wersja Java</Label>
+              <Label htmlFor="edit-java">{t("create.java")}</Label>
               <select
                 id="edit-java"
                 value={javaVersion}
@@ -304,7 +305,7 @@ function EditInstanceDialog({
 
             {/* JVM Arguments */}
             <div className="space-y-2">
-              <Label htmlFor="edit-jvm">Argumenty JVM (opcjonalne)</Label>
+              <Label htmlFor="edit-jvm">{t("create.jvmArgs")}</Label>
               <Input
                 id="edit-jvm"
                 placeholder="-Dfml.ignoreInvalidMinecraftCertificates=true"
@@ -312,8 +313,8 @@ function EditInstanceDialog({
                 onChange={(e) => setJvmArgs(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Dodatkowe argumenty przekazywane do maszyny wirtualnej Javy
-              </p>
+              {t("create.jvmArgsDesc")}
+            </p>
             </div>
 
             {/* Error display */}
@@ -332,7 +333,7 @@ function EditInstanceDialog({
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
-            Anuluj
+            {t("edit.cancel")}
           </Button>
           <Button
             type="button"
@@ -344,10 +345,10 @@ function EditInstanceDialog({
             {saving ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                Zapisywanie...
+                {t("edit.saving")}
               </>
             ) : (
-              "Zapisz zmiany"
+              t("edit.save")
             )}
           </Button>
         </DialogFooter>

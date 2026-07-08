@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { GameConsole } from "@/components/GameConsole";
 import { useLaunch } from "@/hooks/useLaunch";
 import type { InstanceManifest } from "@/types/instance";
@@ -12,11 +13,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
  * streaming logs from the specified instance.
  */
 export default function ConsoleWindow() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const instanceName = id ? decodeURIComponent(id) : null;
 
   const { logs, clearLogs } = useLaunch(instanceName ?? undefined);
-  const [instanceTitle, setInstanceTitle] = useState(instanceName ?? "Konsola");
+  const [instanceTitle, setInstanceTitle] = useState(instanceName ?? t("console.title"));
 
   // Fetch instance name for the window title
   useEffect(() => {
@@ -31,12 +33,12 @@ export default function ConsoleWindow() {
     return (
       <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-8">
         <div className="text-center">
-          <p className="text-red-400 font-mono text-sm">Brak nazwy instancji</p>
+          <p className="text-red-400 font-mono text-sm">{t("errors.noInstance")}</p>
           <button
             onClick={() => getCurrentWindow().close()}
             className="mt-4 text-xs text-[#888] hover:text-[#CCC] transition-colors font-mono"
           >
-            Zamknij okno
+            {t("common.close")}
           </button>
         </div>
       </div>
@@ -50,10 +52,10 @@ export default function ConsoleWindow() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-purple-500" />
           <span className="text-xs font-mono text-[#CCC]">
-            {instanceTitle} — Konsola
+            {instanceTitle} — {t("console.title")}
           </span>
           <span className="text-[10px] text-[#666]">
-            ({logs.length} linii)
+            ({logs.length} {t("console.lines")})
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -61,7 +63,7 @@ export default function ConsoleWindow() {
             onClick={clearLogs}
             className="text-[10px] text-[#666] hover:text-[#CCC] transition-colors font-mono px-2 py-1 rounded hover:bg-[#333]"
           >
-            Wyczyść
+            {t("console.clear")}
           </button>
         </div>
       </div>

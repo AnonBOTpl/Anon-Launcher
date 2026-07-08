@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { InstanceManifest, LoaderType } from "@/types/instance";
 import { cn } from "@/lib/utils";
 import DeleteInstanceDialog from "@/components/DeleteInstanceDialog";
@@ -22,6 +23,7 @@ const loaderColors: Record<LoaderType, string> = {
 };
 
 function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -95,7 +97,7 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
-            <span className="text-[10px] font-medium text-emerald-400">Uruchomiona</span>
+            <span className="text-[10px] font-medium text-emerald-400">{t("instance.running")}</span>
           </div>
         )}
 
@@ -118,7 +120,7 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
                   ? "text-muted-foreground/20 cursor-not-allowed opacity-0 group-hover:opacity-50"
                   : "text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-accent",
               )}
-              aria-label={isRunning ? `Gra uruchomiona - edycja zablokowana` : `Edytuj ${instance.name}`}
+              aria-label={isRunning ? t("instance.unavailableWhileRunning") : `${t("instance.edit")} ${instance.name}`}
               disabled={isRunning}
             >
               <svg
@@ -149,7 +151,7 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
                   ? "text-muted-foreground/20 cursor-not-allowed opacity-0 group-hover:opacity-50"
                   : "text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10",
               )}
-              aria-label={isRunning ? `Gra uruchomiona - usuwanie zablokowane` : `Usuń ${instance.name}`}
+              aria-label={isRunning ? t("instance.unavailableWhileRunning") : `${t("instance.delete")} ${instance.name}`}
               disabled={isRunning}
             >
               <svg
@@ -176,7 +178,7 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
                 navigate(`/instance/${encodeURIComponent(instance.name)}`);
               }}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary/90"
-              aria-label={`Otwórz ${instance.name}`}
+              aria-label={`${t("instance.openFolder")} ${instance.name}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

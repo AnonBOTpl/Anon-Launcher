@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchFabricLoaderVersions } from "@/lib/minecraft-versions";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ function LoaderSelect({
   onLoaderVersionChange,
   error,
 }: LoaderSelectProps) {
+  const { t } = useTranslation();
   const [fabricVersions, setFabricVersions] = useState<
     { version: string; stable: boolean }[]
   >([]);
@@ -65,7 +67,7 @@ function LoaderSelect({
       } catch (err) {
         if (!cancelled) {
           setFabricError(
-            err instanceof Error ? err.message : "Failed to load Fabric versions",
+            err instanceof Error ? err.message : t("loader.failedToLoad"),
           );
         }
       } finally {
@@ -147,7 +149,7 @@ function LoaderSelect({
 
   return (
     <div className="space-y-2" ref={containerRef}>
-      <Label htmlFor="loader-version">Loader</Label>
+      <Label htmlFor="loader-version">{t("loader.title")}</Label>
 
       {/* Loader type buttons */}
       <div className="flex gap-2">
@@ -173,7 +175,7 @@ function LoaderSelect({
             )}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Czysty Minecraft, bez modyfikacji
+            {t("loader.vanillaDesc")}
           </p>
         </button>
 
@@ -196,7 +198,7 @@ function LoaderSelect({
             )}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Lekki loader modów
+            {t("loader.fabricDesc")}
           </p>
         </button>
       </div>
@@ -220,14 +222,14 @@ function LoaderSelect({
           >
             <span className="flex-1 text-left truncate">
               {!mcVersion
-                ? "Najpierw wybierz wersję Minecraft"
+                ? t("loader.selectMcFirst")
                 : loadingFabric
-                  ? "Ładowanie wersji Fabric..."
+                  ? t("loader.loadingFabric")
                   : fabricError
-                    ? "Błąd ładowania"
+                    ? t("loader.loadError")
                     : selectedVersion
                       ? selectedVersion.version
-                      : "Wybierz wersję Fabric"}
+                      : t("loader.selectVersion")}
             </span>
             {canOpen && (
               <svg
@@ -277,7 +279,7 @@ function LoaderSelect({
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Szukaj wersji Fabric..."
+                      placeholder={t("loader.searchPlaceholder")}
                       className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground/60"
                     />
                     {search && (
@@ -326,8 +328,8 @@ function LoaderSelect({
                       </svg>
                       <p className="text-xs text-muted-foreground/60">
                         {search
-                          ? `Brak wersji "${search}"`
-                          : "Brak wersji do wyświetlenia"}
+                        ? t("loader.noResultsFor", { search })
+                        : t("loader.noResults")}
                       </p>
                     </div>
                   ) : (
@@ -372,7 +374,7 @@ function LoaderSelect({
                               variant="outline"
                               className="text-[10px] px-1.5 py-0 h-4 shrink-0"
                             >
-                              stabilna
+                              {t("loader.stable")}
                             </Badge>
                           )}
                         </button>
@@ -385,8 +387,8 @@ function LoaderSelect({
                 {filteredVersions.length > 0 && (
                   <div className="border-t border-border/50 px-2.5 py-1.5">
                     <p className="text-[11px] text-muted-foreground/50">
-                      {filteredVersions.length} wersji
-                      {search && ` (filtrowano: "${search}")`}
+                  {t("version.count", { count: filteredVersions.length })}
+                  {search && t("version.filtered", { search })}
                     </p>
                   </div>
                 )}

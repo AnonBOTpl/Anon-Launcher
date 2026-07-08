@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ContentBrowser from "@/components/ContentBrowser";
@@ -35,6 +36,7 @@ interface ContentCardProps {
 }
 
 function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
+  const { t } = useTranslation();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
 
@@ -75,7 +77,7 @@ function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
           {item.versionNumber ? (
             <span className="font-mono">{item.versionNumber}</span>
           ) : (
-            <span className="italic">nieznana wersja</span>
+            <span className="italic">{t("content.unknownVersion")}</span>
           )}
           <span className="text-muted-foreground/50">·</span>
           <span>{formatSize(item.size)}</span>
@@ -87,7 +89,7 @@ function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
         {disabled ? (
           <button
             disabled
-            title="Niedostępne podczas gry"
+            title={t("content.unavailable")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,7 +105,7 @@ function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
               disabled={removing}
               className="h-7 text-xs px-2"
             >
-              {removing ? "..." : "Usuń"}
+              {removing ? "..." : t("content.remove")}
             </Button>
             <Button
               variant="ghost"
@@ -111,13 +113,13 @@ function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
               onClick={() => setConfirmRemove(false)}
               className="h-7 text-xs px-2"
             >
-              Anuluj
+              {t("content.cancel")}
             </Button>
           </div>
         ) : (
           <button
             onClick={() => setConfirmRemove(true)}
-            title="Usuń"
+            title={t("content.remove")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -133,6 +135,7 @@ function ContentCard({ item, onRemove, disabled }: ContentCardProps) {
 // ─── Main ContentList Component ─────────────────────────────────────
 
 function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disabled }: ContentListProps) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<InstalledContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +149,7 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
       const result = await contentApi.listContent(instanceName, folder);
       setItems(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nie udało się załadować listy.");
+      setError(err instanceof Error ? err.message : t("content.loadError"));
     } finally {
       setLoading(false);
     }
@@ -166,9 +169,8 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
   }, [instanceName, folder, loadItems]);
 
   // Determine label based on folder
-  const label = folder === "resourcepacks" ? "paczek zasobów" : "shaderpacków";
-  const labelSingle = folder === "resourcepacks" ? "paczkę zasobów" : "shaderpack";
-  const searchPlaceholder = folder === "resourcepacks" ? "Szukaj paczek zasobów..." : "Szukaj shaderpacków...";
+  const label = folder === "resourcepacks" ? t("content.resourcepacks") : t("content.shaderpacks");
+  const searchPlaceholder = folder === "resourcepacks" ? t("content.searchResourcepacks") : t("content.searchShaderpacks");
   const projectType = folder === "resourcepacks" ? "resourcepack" : "shader";
 
   return (
@@ -183,9 +185,9 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-sm font-medium text-amber-400">{t("runningBlocked.gameRunning")}</p>
               <p className="text-xs text-amber-400/70 mt-0.5">
-                Zarządzanie {folder === "resourcepacks" ? "paczkami zasobów" : "shaderpackami"} jest zablokowane podczas gry. Zatrzymaj instancję, aby modyfikować zawartość.
+                {folder === "resourcepacks" ? t("content.blockedBannerResourcepacks") : t("content.blockedBannerShaderpacks")}
               </p>
             </div>
           </div>
@@ -197,10 +199,10 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
             {loading
-              ? "Ładowanie..."
+              ? t("content.loading")
               : error
-                ? "Błąd ładowania"
-                : `${items.length} ${label} zainstalowanych`}
+                ? t("content.loadError")
+                : t("content.count", { count: items.length, type: label })}
           </p>
         </div>
 
@@ -223,14 +225,14 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
                   <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                 </svg>
-                Zamknij
+                {t("content.close")}
               </>
             ) : (
               <>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Dodaj {labelSingle}
+                {folder === "resourcepacks" ? t("content.addResourcepack") : t("content.addShaderpack")}
               </>
             )}
           </Button>
@@ -245,10 +247,9 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-amber-400">Shaderpacki wymagają Iris Shaders</p>
+              <p className="text-sm font-medium text-amber-400">{t("content.irisRequired")}</p>
               <p className="mt-0.5 text-xs text-amber-400/70">
-                Aby używać shaderpacków, musisz zainstalować mod <strong>Iris Shaders</strong>.
-                Kliknij poniżej, aby automatycznie pobrać i zainstalować najnowszą wersję Iris.
+                {t("content.irisDescription")}
               </p>
               <Button
                 size="sm"
@@ -267,7 +268,7 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
                 {installingIris ? (
                   <>
                     <div className="h-3 w-3 mr-1.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Instalowanie Iris...
+                    {t("instance.installingIris")}
                   </>
                 ) : (
                   <>
@@ -276,7 +277,7 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                    Zainstaluj Iris Shaders
+                    {t("content.installIris")}
                   </>
                 )}
               </Button>
@@ -319,10 +320,9 @@ function ContentList({ instanceName, folder, irisInstalled, onInstallIris, disab
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
           </svg>
           <p className="text-sm text-muted-foreground">
-            Brak zainstalowanych {label}
-            {folder === "shaderpacks" && irisInstalled === false && " (zainstaluj Iris Shaders)"}
+            {t("content.noItems", { type: label })}{folder === "shaderpacks" && irisInstalled === false && t("content.installIrisHint")}
           </p>
-          <p className="text-xs text-muted-foreground/60">Kliknij "Dodaj {labelSingle}", aby wyszukać i zainstalować</p>
+          <p className="text-xs text-muted-foreground/60">{t("content.addItemHint")}</p>
         </div>
       )}
 

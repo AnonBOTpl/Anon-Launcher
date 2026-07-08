@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useFileDialog } from "@/hooks/useFileDialog";
@@ -25,6 +26,7 @@ function ImportInstanceDialog({
   onOpenChange,
   onImported,
 }: ImportInstanceDialogProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showOpenDialog } = useFileDialog();
   const [importing, setImporting] = useState(false);
@@ -66,7 +68,7 @@ function ImportInstanceDialog({
       setError(
         err instanceof Error
           ? err.message
-          : "Nie udało się otworzyć pliku ZIP",
+          : t("import.errors.openFailed"),
       );
     }
   }
@@ -92,7 +94,7 @@ function ImportInstanceDialog({
       setError(
         err instanceof Error
           ? err.message
-          : "Nie udało się zaimportować instancji",
+          : t("import.errors.importFailed"),
       );
     } finally {
       setImporting(false);
@@ -121,16 +123,16 @@ function ImportInstanceDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === "select" && "Importuj instancję"}
-            {step === "confirm" && "Potwierdź import"}
-            {step === "done" && "Import zakończony"}
+            {step === "select" && t("import.title")}
+            {step === "confirm" && t("import.confirmTitle")}
+            {step === "done" && t("import.doneTitle")}
           </DialogTitle>
           <DialogDescription>
             {step === "select" &&
-              "Wybierz plik ZIP z instancją Minecraft do zaimportowania."}
+              t("import.selectDesc")}
             {step === "confirm" &&
-              `Znaleziono instancję: ${detectedName}`}
-            {step === "done" && "Instancja została pomyślnie zaimportowana!"}
+              t("import.confirmDesc", { detectedName })}
+            {step === "done" && t("import.doneDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -142,10 +144,10 @@ function ImportInstanceDialog({
                 {importing ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                    Sprawdzanie pliku...
+                    {t("import.checking")}
                   </>
                 ) : (
-                  "Wybierz plik ZIP"
+                  t("import.selectFile")
                 )}
               </Button>
             </div>
@@ -156,14 +158,13 @@ function ImportInstanceDialog({
             <>
               {needsMigration && (
                 <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
-                  Manifest instancji wymaga migracji — zostanie automatycznie
-                  zaktualizowany podczas importu.
+                  {t("import.migrationNotice")}
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="import-name">
-                  Nazwa instancji (możesz zmienić)
+                  {t("import.instanceNameLabel")}
                 </Label>
                 <Input
                   id="import-name"
@@ -187,7 +188,7 @@ function ImportInstanceDialog({
             <div className="flex items-center justify-center gap-3 py-2">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-primary" />
               <span className="text-sm text-muted-foreground">
-                Wypakowywanie instancji...
+                {t("import.extracting")}
               </span>
             </div>
           )}
@@ -200,7 +201,7 @@ function ImportInstanceDialog({
               variant="outline"
               onClick={() => handleClose(false)}
             >
-              Anuluj
+              {t("import.cancel")}
             </Button>
           )}
 
@@ -215,17 +216,17 @@ function ImportInstanceDialog({
                 }}
                 disabled={importing}
               >
-                Wstecz
+                {t("import.back")}
               </Button>
               <Button onClick={handleImport} disabled={importing || !customName.trim()}>
-                {importing ? "Importowanie..." : "Importuj"}
+                {importing ? t("import.importing") : t("import.submit")}
               </Button>
             </>
           )}
 
           {step === "done" && (
             <Button onClick={handleViewDashboard}>
-              Przejdź do Dashboardu
+              {t("import.goToDashboard")}
             </Button>
           )}
         </DialogFooter>

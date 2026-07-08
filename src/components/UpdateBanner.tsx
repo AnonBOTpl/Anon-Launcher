@@ -1,5 +1,6 @@
 import { X, ArrowUp } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { UpdateInfo } from "@/hooks/useUpdater";
 
 interface UpdateBannerProps {
@@ -8,6 +9,7 @@ interface UpdateBannerProps {
 }
 
 export function UpdateBanner({ update, onOpenRelease }: UpdateBannerProps) {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
@@ -16,22 +18,22 @@ export function UpdateBanner({ update, onOpenRelease }: UpdateBannerProps) {
       <div className="flex items-center gap-2 min-w-0">
         <ArrowUp size={14} className="text-purple-400 shrink-0" />
         <span className="text-muted-foreground truncate">
-          Dostępna aktualizacja{" "}
+          {t("update.available")}{" "}
           <span className="font-semibold text-foreground">
-            v{update.version}
+            {t("update.version", { version: update.version })}
           </span>
         </span>
         <button
           onClick={onOpenRelease}
           className="text-purple-400 hover:text-purple-300 font-medium underline underline-offset-2 transition-colors shrink-0"
         >
-          Pobierz
+          {t("update.download")}
         </button>
       </div>
       <button
         onClick={() => setDismissed(true)}
         className="text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0"
-        aria-label="Zamknij"
+        aria-label={t("common.close")}
       >
         <X size={14} />
       </button>

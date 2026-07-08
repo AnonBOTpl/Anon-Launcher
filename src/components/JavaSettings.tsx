@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getJavaLabel } from "@/lib/java";
@@ -27,6 +28,7 @@ function JavaSettings({
   isDownloading,
   downloadError,
 }: JavaSettingsProps) {
+  const { t } = useTranslation();
   const [useCustom, setUseCustom] = useState(false);
   const [localCustomPath, setLocalCustomPath] = useState(customPath ?? "");
   const [verifiedVersion, setVerifiedVersion] = useState<string | null>(null);
@@ -62,7 +64,7 @@ function JavaSettings({
           const ver = await invoke<string>("verify_java_path", { path: selected });
           setVerifiedVersion(ver);
         } catch (err) {
-          const msg = typeof err === "string" ? err : "Nieprawidłowy plik Java";
+          const msg = typeof err === "string" ? err : t("java.errors.invalidFile");
           setVerifyError(msg);
           setVerifiedVersion(null);
         } finally {
@@ -87,7 +89,7 @@ function JavaSettings({
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Pobrana Java
+          {t("java.downloaded")}
         </button>
         <button
           type="button"
@@ -98,7 +100,7 @@ function JavaSettings({
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Własna ścieżka
+          {t("java.customPath")}
         </button>
       </div>
 
@@ -137,14 +139,14 @@ function JavaSettings({
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Pobierz
+              {t("java.download")}
             </Button>
           )}
 
           {isDownloading && (
             <div className="flex items-center gap-1.5 h-10 shrink-0 px-3">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-              <span className="text-xs text-muted-foreground">Pobieranie...</span>
+              <span className="text-xs text-muted-foreground">{t("java.downloading")}</span>
             </div>
           )}
         </div>
@@ -169,11 +171,11 @@ function JavaSettings({
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
-              Przeglądaj
+              {t("java.browse")}
             </Button>
           </div>
-          {verifying && <p className="text-xs text-muted-foreground">Weryfikacja...</p>}
-          {verifiedVersion && <p className="text-xs text-emerald-400">✓ Wykryto {verifiedVersion}</p>}
+          {verifying && <p className="text-xs text-muted-foreground">{t("java.verifying")}</p>}
+          {verifiedVersion && <p className="text-xs text-emerald-400">✓ {t("java.detected", { version: verifiedVersion })}</p>}
           {verifyError && <p className="text-xs text-destructive">{verifyError}</p>}
         </div>
       )}
@@ -182,10 +184,10 @@ function JavaSettings({
       {!useCustom && !isInstalled && !isDownloading && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5">
           <p className="text-xs text-amber-400">
-            {getJavaLabel(value)} nie jest zainstalowana.
+            {t("java.notInstalled", { label: getJavaLabel(value) })}
             {canDownload
-              ? " Kliknij Pobierz, aby automatycznie ściągnąć."
-              : " Wybierz inną wersję lub użyj własnej ścieżki."}
+              ? t("java.downloadHint")
+              : t("java.customPathHint")}
           </p>
         </div>
       )}

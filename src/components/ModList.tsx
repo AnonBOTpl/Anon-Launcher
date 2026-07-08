@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useMods } from "@/hooks/useMods";
 import { useModIcons } from "@/hooks/useModIcons";
 import { useModUpdates } from "@/hooks/useModUpdates";
@@ -46,6 +47,7 @@ interface ModCardProps {
 }
 
 function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchMod, disabled }: ModCardProps) {
+  const { t } = useTranslation();
   const [removing, setRemoving] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [updatingMod, setUpdatingMod] = useState(false);
@@ -93,7 +95,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
           mod.enabled ? "bg-purple-500" : "bg-muted",
           disabled && "opacity-50 cursor-not-allowed",
         )}
-        title={disabled ? "Niedostępne podczas gry" : (mod.enabled ? "Wyłącz" : "Włącz")}
+        title={disabled ? t("mods.unavailable") : (mod.enabled ? t("mods.disable") : t("mods.enable"))}
       >
         <span
           className={cn(
@@ -130,7 +132,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
           <p className="text-sm font-medium truncate">{displayName}</p>
           {update && (
             <span className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-400 ring-1 ring-amber-500/20">
-              Aktualizacja
+              {t("mods.update")}
             </span>
           )}
         </div>
@@ -140,12 +142,12 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
           ) : mod.versionId ? (
             <span className="font-mono" title={mod.versionId}>{mod.versionId.slice(0, 8)}…</span>
           ) : (
-            <span className="italic">nieznana wersja</span>
+            <span className="italic">{t("mods.unknownVersion")}</span>
           )}
           {mod.enabled ? (
             <span className="text-muted-foreground/50">·</span>
           ) : (
-            <span className="text-destructive/70">· wyłączony</span>
+            <span className="text-destructive/70">· {t("mods.disabled")}</span>
           )}
         </p>
         {/* Update info */}
@@ -166,7 +168,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
           <button
             onClick={() => !disabled && onSearchMod(mod.name)}
             disabled={disabled}
-            title={disabled ? "Niedostępne podczas gry" : "Znajdź na Modrinth"}
+            title={disabled ? t("mods.unavailable") : t("mods.findOnModrinth")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
               disabled
@@ -185,7 +187,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
           <button
             onClick={handleUpdate}
             disabled={updatingMod || disabled}
-            title={disabled ? "Niedostępne podczas gry" : `Aktualizuj do ${update.newVersionNumber}`}
+            title={disabled ? t("mods.unavailable") : t("mods.updateTo", { version: update.newVersionNumber })}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
               disabled
@@ -209,7 +211,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
         {disabled ? (
           <button
             disabled
-            title="Niedostępne podczas gry"
+            title={t("mods.unavailable")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -225,7 +227,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
               disabled={removing}
               className="h-7 text-xs px-2"
             >
-              {removing ? "..." : "Usuń"}
+              {removing ? "..." : t("mods.remove")}
             </Button>
             <Button
               variant="ghost"
@@ -233,13 +235,13 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
               onClick={() => setConfirmRemove(false)}
               className="h-7 text-xs px-2"
             >
-              Anuluj
+              {t("mods.cancel")}
             </Button>
           </div>
         ) : (
           <button
             onClick={() => setConfirmRemove(true)}
-            title="Odinstaluj mod"
+            title={t("mods.uninstall")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -255,6 +257,7 @@ function ModCard({ mod, iconUrl, update, onToggle, onRemove, onUpdate, onSearchM
 // ─── Main ModList Component ────────────────────────────────────────
 
 function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: ModListProps) {
+  const { t } = useTranslation();
   const { mods, loading, error, toggle, remove, refresh } = useMods(instanceName);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
@@ -380,9 +383,9 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-400">Gra jest uruchomiona</p>
+              <p className="text-sm font-medium text-amber-400">{t("runningBlocked.gameRunning")}</p>
               <p className="text-xs text-amber-400/70 mt-0.5">
-                Zarządzanie modami jest zablokowane podczas gry. Zatrzymaj instancję, aby modyfikować mody.
+                {t("mods.blockedBanner")}
               </p>
             </div>
           </div>
@@ -394,10 +397,10 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
             {loading
-              ? "Ładowanie modów..."
+              ? t("mods.loading")
               : error
-                ? "Błąd ładowania"
-                : `${mods.length} modów zainstalowanych`}
+                ? t("mods.loadError")
+                : t("mods.modCount", { count: mods.length })}
           </p>
           {checkableCount > 0 && (
             <button
@@ -415,14 +418,14 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
               {checking ? (
                 <>
                   <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-                  Sprawdzanie...
+                  {t("mods.checking")}
                 </>
               ) : (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
                   </svg>
-                  {hasUpdates ? `${updates.length} aktualizacji` : "Aktualizacje"}
+                  {hasUpdates ? t("mods.updatesAvailable", { count: updates.length }) : t("mods.checkUpdates")}
                 </>
               )}
             </button>
@@ -442,7 +445,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Aktualizuj wszystkie ({updates.length})
+              {t("mods.updateAll", { count: updates.length })}
             </Button>
           )}
 
@@ -470,7 +473,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             )}
-            {showSearch ? "Zamknij" : "Dodaj mod"}
+            {showSearch ? t("mods.close") : t("mods.addMod")}
           </Button>
         </div>
       </div>
@@ -532,8 +535,8 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
                 <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
               </svg>
-              <p className="text-sm text-muted-foreground">Brak zainstalowanych modów</p>
-              <p className="text-xs text-muted-foreground/60">Kliknij \"Dodaj mod\", aby wyszukać i zainstalować</p>
+              <p className="text-sm text-muted-foreground">{t("mods.noMods")}</p>
+              <p className="text-xs text-muted-foreground/60">{t("mods.addModHint")}</p>
             </div>
           )}
 
@@ -579,9 +582,9 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                 </svg>
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">Snapshot przed aktualizacją</h2>
+                <h2 className="text-lg font-semibold">{t("mods.snapshotBeforeUpdate")}</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Utworzyć backup instancji przed aktualizacją modów?
+                  {t("mods.snapshotBeforeUpdateDesc")}
                 </p>
               </div>
             </div>
@@ -596,7 +599,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                Pełna kopia (zalecane)
+                {t("mods.snapshotFullRecommended")}
               </Button>
               <Button
                 size="sm"
@@ -604,7 +607,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                 onClick={() => handleConfirmUpdateAll("metadata")}
                 className="w-full text-xs"
               >
-                Tylko metadane
+                {t("mods.snapshotMetaOnly")}
               </Button>
               <Button
                 size="sm"
@@ -612,7 +615,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
                 onClick={() => handleConfirmUpdateAll("skip")}
                 className="w-full text-xs text-muted-foreground"
               >
-                Nie twórz
+                {t("mods.snapshotSkip")}
               </Button>
             </div>
           </div>
@@ -626,7 +629,7 @@ function ModList({ instanceName, instanceMcVersion, onUpdatesFound, disabled }: 
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
               <p className="text-sm text-muted-foreground">
-                Tworzenie snapshotu...
+                {t("mods.snapshotCreating")}
               </p>
             </div>
           </div>

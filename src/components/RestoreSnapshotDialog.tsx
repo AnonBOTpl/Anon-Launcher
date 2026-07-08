@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 interface RestoreSnapshotDialogProps {
@@ -14,6 +15,7 @@ export default function RestoreSnapshotDialog({
   onConfirm,
   onCancel,
 }: RestoreSnapshotDialogProps) {
+  const { t } = useTranslation();
   const [confirmText, setConfirmText] = useState("");
 
   return (
@@ -62,12 +64,12 @@ export default function RestoreSnapshotDialog({
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold">
-              Przywróć snapshot
+              {t("snapshots.restoreTitle")}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               {mode === "full"
-                ? "Cała instancja zostanie zastąpiona kopią z snapshotu. Bieżące dane zostaną utracone."
-                : "Zostanie przywrócona konfiguracja i lista modów. Pliki JAR nie zostaną pobrane."}
+                ? t("snapshots.restoreFullDesc")
+                : t("snapshots.restoreMetaDesc")}
             </p>
           </div>
         </div>
@@ -76,9 +78,8 @@ export default function RestoreSnapshotDialog({
         {mode === "full" && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
             <p className="text-xs text-destructive/80">
-              <strong>Ostrzeżenie:</strong> Ta operacja usunie bieżący stan
-              instancji i zastąpi go stanem z snapshotu.
-              {loading && " Przywracanie..."}
+              <strong>{t("common.warning")}:</strong> {t("snapshots.restoreWarning")}
+              {loading && " " + t("snapshots.restoring")}
             </p>
           </div>
         )}
@@ -87,13 +88,13 @@ export default function RestoreSnapshotDialog({
         {mode === "full" && (
           <div className="mt-3">
             <label className="text-xs text-muted-foreground mb-1 block">
-              Wpisz <span className="font-mono text-foreground">przywróć</span>, aby potwierdzić:
+              {t("snapshots.restoreConfirmLabel")}
             </label>
             <input
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="przywróć"
+              placeholder={t("snapshots.restorePlaceholder")}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs outline-none focus:border-ring"
             />
           </div>
@@ -108,7 +109,7 @@ export default function RestoreSnapshotDialog({
             disabled={loading}
             className="text-xs"
           >
-            Anuluj
+            {t("snapshots.cancel")}
           </Button>
           <Button
             variant={mode === "full" ? "destructive" : "default"}
@@ -122,10 +123,10 @@ export default function RestoreSnapshotDialog({
             {loading ? (
               <>
                 <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-white mr-1.5" />
-                Przywracanie...
+                {t("snapshots.restoring")}
               </>
             ) : (
-              "Przywróć"
+              t("snapshots.restore")
             )}
           </Button>
         </div>

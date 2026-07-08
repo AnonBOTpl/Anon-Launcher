@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { CrashReport } from "@/lib/crash-reports";
 import { CrashReportViewer } from "./CrashReportViewer";
 
@@ -60,6 +61,7 @@ export function CrashReportList({
   onDeleteAll,
   onOpenFolder,
 }: CrashReportListProps) {
+  const { t } = useTranslation();
   // Find the currently selected report metadata
   const currentReport = reports.find((r) => r.filename === selectedReport) ?? null;
 
@@ -68,7 +70,7 @@ export function CrashReportList({
       {/* Toolbar */}
       <div className="flex items-center justify-between border-b border-border/50 px-4 py-3 bg-card/30 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">Raporty awarii</span>
+          <span className="text-sm font-medium text-foreground">{t("crash.title")}</span>
           {reports.length > 0 && (
             <span className="text-xs text-muted-foreground">({reports.length})</span>
           )}
@@ -93,7 +95,7 @@ export function CrashReportList({
                 <path d="M3 6h18" />
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
               </svg>
-              Usuń wszystkie
+              {t("crash.deleteAll")}
             </button>
           )}
           <button
@@ -116,7 +118,7 @@ export function CrashReportList({
               <path d="M21 12a9 9 0 1 1-9-9" />
               <path d="M21 3v5h-5" />
             </svg>
-            Odśwież
+            {t("common.refresh")}
           </button>
         </div>
       </div>
@@ -149,12 +151,12 @@ export function CrashReportList({
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <p className="text-sm text-muted-foreground">Brak raportów awarii</p>
+          <p className="text-sm text-muted-foreground">{t("crash.noReports")}</p>
           <p className="mt-1 text-xs text-muted-foreground/60">
-            Jeśli Minecraft ulegnie awarii, raport pojawi się tutaj automatycznie.
+            {t("crash.noReportsHint")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground/60">
-            Możesz też odświeżyć ręcznie.
+            {t("crash.refreshHint")}
           </p>
         </div>
       ) : selectedReport && currentReport && selectedContent !== null ? (
@@ -173,7 +175,7 @@ export function CrashReportList({
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-3 border-muted border-t-purple-500" />
-            <p className="text-xs text-muted-foreground">Wczytywanie raportu...</p>
+            <p className="text-xs text-muted-foreground">{t("crash.loading")}</p>
           </div>
         </div>
       ) : (
@@ -209,7 +211,7 @@ export function CrashReportList({
                       {report.filename}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {isJvm ? "JVM Crash" : "Minecraft Crash"} · {formatSize(report.fileSize)} · {formatTimestamp(report.timestamp)}
+                      {isJvm ? t("crash.jvmCrash") : t("crash.minecraftCrash")} · {formatSize(report.fileSize)} · {formatTimestamp(report.timestamp)}
                     </p>
                     {report.preview && (
                       <p className="mt-1.5 text-xs text-muted-foreground/80 line-clamp-2 font-mono">
@@ -242,7 +244,7 @@ export function CrashReportList({
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
-                    Pokaż
+                    {t("crash.viewDetails")}
                   </span>
                   <span
                     onClick={(e) => {
@@ -264,7 +266,7 @@ export function CrashReportList({
                     >
                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                     </svg>
-                    Otwórz folder
+                    {t("crash.openFolder")}
                   </span>
                   <span
                     onClick={(e) => {
@@ -287,7 +289,7 @@ export function CrashReportList({
                       <path d="M3 6h18" />
                       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                     </svg>
-                    Usuń
+                    {t("crash.delete")}
                   </span>
                 </div>
               </button>

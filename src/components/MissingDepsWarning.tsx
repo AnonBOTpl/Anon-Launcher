@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DependencyInfo } from "@/lib/dependency-resolver";
@@ -24,6 +25,7 @@ function DependencyItem({
   isOptionalSelected?: boolean;
   onToggleOptional?: (projectId: string) => void;
 }) {
+  const { t } = useTranslation();
   const indent = dep.depth * 12;
 
   return (
@@ -43,7 +45,7 @@ function DependencyItem({
               "relative h-4 w-7 shrink-0 rounded-full transition-colors",
               isOptionalSelected ? "bg-amber-500" : "bg-muted-foreground/20 ring-1 ring-inset ring-border",
             )}
-            title={isOptionalSelected ? "Nie instaluj" : "Instaluj"}
+            title={isOptionalSelected ? t("mods.disableInstall") : t("mods.enableInstall")}
           >
             <span
               className={cn(
@@ -82,19 +84,19 @@ function DependencyItem({
         {/* Name + type badge */}
         <span className="truncate flex-1">{dep.modName || dep.projectId}</span>
         {dep.type === "required" && !dep.installed && (
-          <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[9px] text-destructive font-medium">Wymagane</span>
+          <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[9px] text-destructive font-medium">{t("modDetails.required")}</span>
         )}
         {dep.type === "optional" && !dep.installed && !isOptionalSelected && (
-          <span className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] text-amber-400 font-medium">Opcjonalne</span>
+          <span className="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] text-amber-400 font-medium">{t("modDetails.optional")}</span>
         )}
         {dep.type === "optional" && !dep.installed && isOptionalSelected && (
-          <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-300 font-medium ring-1 ring-amber-500/30">Instaluj</span>
+          <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-300 font-medium ring-1 ring-amber-500/30">{t("modDetails.install")}</span>
         )}
         {dep.type === "incompatible" && (
-          <span className="shrink-0 rounded bg-red-500/10 px-1.5 py-0.5 text-[9px] text-red-400 font-medium">Niezgodne</span>
+          <span className="shrink-0 rounded bg-red-500/10 px-1.5 py-0.5 text-[9px] text-red-400 font-medium">{t("modDetails.incompatible")}</span>
         )}
         {dep.installed && (
-          <span className="shrink-0 text-[10px] text-emerald-400">Zainstalowane</span>
+          <span className="shrink-0 text-[10px] text-emerald-400">{t("modDetails.installed")}</span>
         )}
       </div>
 
@@ -117,6 +119,7 @@ export default function MissingDepsWarning({
   onInstallDeps,
   onCancel,
 }: MissingDepsWarningProps) {
+  const { t } = useTranslation();
   const [selectedOptionalIds, setSelectedOptionalIds] = useState<Set<string>>(new Set());
 
   const toggleOptional = (projectId: string) => {
@@ -169,17 +172,17 @@ export default function MissingDepsWarning({
           </div>
         )}
         <div className="flex-1">
-          <h3 className="text-sm font-semibold">Zależności modów</h3>
+          <h3 className="text-sm font-semibold">{t("mods.dependencies")}</h3>
           <p className="text-[11px] text-muted-foreground">
             {loading
-              ? "Sprawdzanie zależności..."
+              ? t("mods.checkingDeps")
               : circularDetected
-                ? `Wykryto cykliczną zależność dla ${modName}`
+                ? t("mods.circularDep", { modName })
                 : hasConflicts
-                  ? `${modName} jest niezgodny z zainstalowanymi modami`
+                  ? t("mods.incompatibleMod", { modName })
                   : hasMissing || optionalSelectedCount > 0
-                    ? `${modName} wymaga ${totalToInstall} modów`
-                    : `Wszystkie zależności dla ${modName} są już zainstalowane`}
+                    ? t("mods.requiresDeps", { modName, count: totalToInstall })
+                    : t("mods.allDepsInstalled", { modName })}
           </p>
         </div>
       </div>
@@ -196,7 +199,7 @@ export default function MissingDepsWarning({
         <div className="flex flex-col items-center gap-2 py-4">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
           <p className="text-xs text-muted-foreground">
-            Pobieranie i instalowanie modów dla <span className="text-foreground font-medium">{modName}</span>...
+            {t("mods.installingDepsFor", { modName })}
           </p>
         </div>
       )}
@@ -218,7 +221,7 @@ export default function MissingDepsWarning({
       {/* Circular warning */}
       {!loading && circularDetected && (
         <p className="text-xs text-destructive/80">
-          Wykryto zapętlenie zależności. Instalacja może nie być możliwa.
+          {t("mods.circularDepWarning")}
         </p>
       )}
 
@@ -231,7 +234,7 @@ export default function MissingDepsWarning({
             onClick={onCancel}
             className="text-xs"
           >
-            Anuluj
+            {t("mods.cancel")}
           </Button>
 
           {!circularDetected && !hasConflicts && (
@@ -247,8 +250,8 @@ export default function MissingDepsWarning({
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               {totalToInstall > 0
-                ? `Zainstaluj ${totalToInstall} zależności`
-                : "Zainstaluj mod"}
+                ? t("mods.installDepsCount", { count: totalToInstall })
+                : t("mods.installMod")}
             </Button>
           )}
 
@@ -259,7 +262,7 @@ export default function MissingDepsWarning({
               onClick={onCancel}
               className="text-xs"
             >
-              Anuluj instalację
+              {t("mods.cancelInstall")}
             </Button>
           )}
         </div>

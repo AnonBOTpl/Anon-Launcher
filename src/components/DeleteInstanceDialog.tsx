@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -26,6 +27,7 @@ function DeleteInstanceDialog({
   onOpenChange,
   onDeleted,
 }: DeleteInstanceDialogProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [confirmName, setConfirmName] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -52,7 +54,7 @@ function DeleteInstanceDialog({
       navigate("/");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Nie udało się usunąć instancji",
+        err instanceof Error ? err.message : t("delete.errors.deleteFailed"),
       );
     } finally {
       setDeleting(false);
@@ -69,18 +71,16 @@ function DeleteInstanceDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-destructive">
-            Usuń instancję
+            {t("delete.title")}
           </DialogTitle>
           <DialogDescription className="space-y-3">
             <p>
-              Usunięcie instancji <strong>{instanceName}</strong> jest
-              <strong className="text-destructive"> nieodwracalne</strong>.
-              Zostaną usunięte wszystkie pliki, mody i zapisane gry.
+              {t("delete.description", { instanceName })}
             </p>
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm">
-              <p className="font-medium">Tej operacji nie można cofnąć.</p>
+              <p className="font-medium">{t("delete.irreversible")}</p>
               <p className="mt-1 text-muted-foreground">
-                Aby potwierdzić, wpisz nazwę instancji poniżej.
+                {t("delete.confirmHint")}
               </p>
             </div>
           </DialogDescription>
@@ -89,7 +89,7 @@ function DeleteInstanceDialog({
         <div className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="confirm-delete">
-              Wpisz <strong>{instanceName}</strong> aby potwierdzić
+              {t("delete.confirmLabel", { instanceName })}
             </Label>
             <Input
               id="confirm-delete"
@@ -115,7 +115,7 @@ function DeleteInstanceDialog({
             onClick={() => handleOpenChange(false)}
             disabled={deleting}
           >
-            Anuluj
+            {t("delete.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -125,10 +125,10 @@ function DeleteInstanceDialog({
             {deleting ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                Usuwanie...
+                {t("delete.deleting")}
               </>
             ) : (
-              "Usuń instancję"
+              t("delete.submit")
             )}
           </Button>
         </DialogFooter>

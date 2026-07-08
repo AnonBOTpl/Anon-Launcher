@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface LaunchButtonProps {
@@ -28,6 +29,7 @@ export function LaunchButton({
   disabledReason,
   size = "default",
 }: LaunchButtonProps) {
+  const { t } = useTranslation();
   const isHero = size === "hero";
 
   switch (status.type) {
@@ -56,7 +58,7 @@ export function LaunchButton({
           >
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
-          {isHero ? "Uruchom" : "Uruchom"}
+          {t("instance.launch")}
         </button>
       );
 
@@ -70,7 +72,7 @@ export function LaunchButton({
           )}
         >
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          Uruchamianie...
+          {t("instance.launching")}
         </button>
       );
 
@@ -94,7 +96,7 @@ export function LaunchButton({
           >
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
-          Zatrzymaj
+          {t("instance.stop")}
         </button>
       );
 
@@ -123,7 +125,7 @@ export function LaunchButton({
               <polyline points="1 4 1 10 7 10" />
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
             </svg>
-            Spróbuj ponownie
+            {t("launch.retry")}
           </button>
           {!isHero && (
             <span className="text-xs text-destructive max-w-[200px] truncate">

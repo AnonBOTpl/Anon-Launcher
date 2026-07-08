@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchMinecraftVersions, type MinecraftVersion } from "@/lib/minecraft-versions";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ interface VersionSelectProps {
 type TabType = "release" | "snapshot";
 
 function VersionSelect({ value, onChange, error }: VersionSelectProps) {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<MinecraftVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setFetchError(err instanceof Error ? err.message : "Failed to load versions");
+          setFetchError(err instanceof Error ? err.message : t("version.failedToLoad"));
         }
       } finally {
         if (!cancelled) {
@@ -121,7 +123,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
 
   return (
     <div className="space-y-2" ref={containerRef}>
-      <Label htmlFor="mc-version">Wersja Minecraft</Label>
+      <Label htmlFor="mc-version">{t("version.title")}</Label>
 
       {/* Tab switcher */}
       <div className="flex gap-1 rounded-lg bg-muted p-0.5">
@@ -135,7 +137,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          Wydania
+          {t("version.releases")}
         </button>
         <button
           type="button"
@@ -147,7 +149,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          Snapshoty
+          {t("version.snapshots")}
         </button>
       </div>
 
@@ -167,10 +169,10 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
       >
         <span className="flex-1 text-left truncate">
           {loading
-            ? "Ładowanie wersji..."
+            ? t("version.loading")
             : fetchError
-              ? "Błąd ładowania"
-              : value || "Wybierz wersję"}
+              ? t("version.loadError")
+              : value || t("version.selectPlaceholder")}
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -218,7 +220,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Szukaj wersji..."
+                  placeholder={t("version.searchPlaceholder")}
                   className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground/60"
                 />
                 {search && (
@@ -270,8 +272,8 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
                   </svg>
                   <p className="text-xs text-muted-foreground/60">
                     {search
-                      ? `Brak wersji "${search}"`
-                      : "Brak wersji do wyświetlenia"}
+                      ? t("version.noResultsFor", { search })
+                      : t("version.noResults")}
                   </p>
                 </div>
               ) : (
@@ -321,8 +323,8 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
             {filteredVersions.length > 0 && (
               <div className="border-t border-border/50 px-2.5 py-1.5">
                 <p className="text-[11px] text-muted-foreground/50">
-                  {filteredVersions.length} wersji
-                  {search && ` (filtrowano: "${search}")`}
+                  {t("version.count", { count: filteredVersions.length })}
+                  {search && t("version.filtered", { search })}
                 </p>
               </div>
             )}
@@ -333,7 +335,7 @@ function VersionSelect({ value, onChange, error }: VersionSelectProps) {
       {error && <p className="text-xs text-destructive">{error}</p>}
       {fetchError && (
         <p className="text-xs text-destructive">
-          Nie udało się załadować wersji. Sprawdź połączenie z internetem.
+          {t("version.fetchError")}
         </p>
       )}
     </div>

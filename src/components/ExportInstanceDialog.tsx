@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useFileDialog } from "@/hooks/useFileDialog";
@@ -33,6 +34,7 @@ function ExportInstanceDialog({
   onOpenChange,
   onExported,
 }: ExportInstanceDialogProps) {
+  const { t } = useTranslation();
   const { showSaveDialog } = useFileDialog();
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,7 @@ function ExportInstanceDialog({
       setError(
         err instanceof Error
           ? err.message
-          : "Nie udało się rozpocząć eksportu",
+          : t("export.errors.startFailed"),
       );
       setExporting(false);
     }
@@ -122,10 +124,9 @@ function ExportInstanceDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Eksportuj instancję</DialogTitle>
+          <DialogTitle>{t("export.title")}</DialogTitle>
           <DialogDescription>
-            Wyeksportuj <strong>{instanceName}</strong> do archiwum ZIP.
-            Wszystkie pliki instancji zostaną skompresowane.
+            {t("export.description", { instanceName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +148,7 @@ function ExportInstanceDialog({
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
-                Instancja została pomyślnie wyeksportowana!
+                {t("export.successDesc")}
               </div>
             </div>
           )}
@@ -177,7 +178,7 @@ function ExportInstanceDialog({
                   {progress?.phase === "counting" ? (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-                      <span>Zliczanie plików...</span>
+                      <span>{t("export.countingFiles")}</span>
                     </>
                   ) : progress?.phase === "compressing" ? (
                     <>
@@ -187,11 +188,11 @@ function ExportInstanceDialog({
                       </span>
                     </>
                   ) : progress?.phase === "done" ? (
-                    <span className="text-emerald-400">Finalizowanie...</span>
+                    <span className="text-emerald-400">{t("export.finalizing")}</span>
                   ) : (
                     <>
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-                      <span>Kompresowanie...</span>
+                      <span>{t("export.compressing")}</span>
                     </>
                   )}
                 </div>
@@ -212,11 +213,11 @@ function ExportInstanceDialog({
             onClick={() => handleClose(false)}
             disabled={exporting}
           >
-            {success ? "Zamknij" : "Anuluj"}
+            {success ? t("export.close") : t("export.cancel")}
           </Button>
           {!success && (
             <Button onClick={handleExport} disabled={exporting}>
-              {exporting ? "Eksportowanie..." : "Wybierz lokalizację i eksportuj"}
+              {exporting ? t("export.exporting") : t("export.start")}
             </Button>
           )}
         </DialogFooter>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useModSearch } from "@/hooks/useModSearch";
 import { getProject, getProjectVersions, formatDownloads } from "@/lib/modrinth";
 import { checkModDependencies } from "@/lib/dependency-resolver";
@@ -77,6 +78,7 @@ interface ModDetailsProps {
 }
 
 function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpdated }: ModDetailsProps) {
+  const { t } = useTranslation();
   const [project, setProject] = useState<ModrinthProject | null>(null);
   const [versions, setVersions] = useState<ModrinthVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Nie udało się załadować szczegółów.");
+          setError(err instanceof Error ? err.message : t("modDetails.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -310,8 +312,8 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
   if (error || !project) {
     return (
       <div className="flex flex-col items-center gap-3 py-12">
-        <p className="text-sm text-destructive">{error || "Nie znaleziono projektu."}</p>
-        <Button variant="ghost" size="sm" onClick={onBack}>Powrót do wyników</Button>
+        <p className="text-sm text-destructive">{error || t("modDetails.notFound")}</p>
+        <Button variant="ghost" size="sm" onClick={onBack}>{t("modDetails.backToResults")}</Button>
       </div>
     );
   }
@@ -326,7 +328,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        Powrót do wyników
+        {t("modDetails.backToResults")}
       </button>
 
       {/* Header */}
@@ -350,12 +352,12 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
             <h2 className="text-xl font-semibold truncate">{project.title}</h2>
             {isInstalled && (
               <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-emerald-500/20">
-                Zainstalowany
+                {t("modDetails.installed")}
               </span>
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {project.author} · {formatDownloads(project.downloads)} pobrań
+            {project.author} · {formatDownloads(project.downloads)} {t("modDetails.downloads")}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
             {project.loaders.map((l) => (
@@ -380,13 +382,13 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
       {/* Description */}
       <div ref={descriptionRef} className="rounded-lg border border-border/50 bg-card/50 p-4 overflow-hidden">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Opis</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("modDetails.description")}</h3>
           {showFullBody && project.body.length > 500 && (
             <button
               onClick={() => setShowFullBody(false)}
               className="text-xs text-purple-400 hover:text-purple-300 transition-colors shrink-0 ml-2"
             >
-              Pokaż mniej ↑
+              {t("modDetails.showLess")} ↑
             </button>
           )}
         </div>
@@ -402,7 +404,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
             onClick={handleToggleDescription}
             className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
           >
-            {showFullBody ? "Pokaż mniej ↓" : "Pokaż więcej ↓"}
+            {showFullBody ? t("modDetails.showLess") + " ↓" : t("modDetails.showMore") + " ↓"}
           </button>
         )}
       </div>
@@ -411,7 +413,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
       {selectedVersion && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Wybierz wersję
+            {t("modDetails.selectVersion")}
           </h3>
           <div className="flex items-center gap-3">
             <select
@@ -449,7 +451,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
                   <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                 </svg>
-                {uninstalling ? "..." : "Odinstaluj"}
+                {uninstalling ? "..." : t("modDetails.uninstall")}
               </Button>
             ) : (
               <Button
@@ -467,7 +469,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                    Zainstaluj
+                    {t("modDetails.install")}
                   </>
                 )}
               </Button>
@@ -478,7 +480,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
               <span>{selectedVersion.version_number}</span>
               <span>{selectedVersion.loaders.join(", ")}</span>
               <span>{selectedVersion.game_versions.join(", ")}</span>
-              <span>{formatDownloads(selectedVersion.downloads)} pobrań</span>
+              <span>{formatDownloads(selectedVersion.downloads)} {t("modDetails.downloads")}</span>
               {selectedVersion.version_type !== "release" && (
                 <span className={cn("uppercase font-medium", selectedVersion.version_type === "beta" ? "text-amber-400" : "text-red-400")}>
                   {selectedVersion.version_type}
@@ -508,21 +510,21 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
       {selectedVersion && selectedVersion.dependencies.length > 0 && !depState.visible && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Zależności
+            {t("modDetails.dependencies")}
           </h3>
           <div className="space-y-1.5">
             {selectedVersion.dependencies.map((dep, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
                 {dep.dependency_type === "required" && (
-                  <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive font-medium">Wymagane</span>
+                  <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive font-medium">{t("modDetails.required")}</span>
                 )}
                 {dep.dependency_type === "optional" && (
-                  <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-400 font-medium">Opcjonalne</span>
+                  <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-400 font-medium">{t("modDetails.optional")}</span>
                 )}
                 {dep.dependency_type === "incompatible" && (
-                  <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] text-red-400 font-medium">Niezgodne</span>
+                  <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] text-red-400 font-medium">{t("modDetails.incompatible")}</span>
                 )}
-                <span className="text-muted-foreground">{dep.project_id ?? dep.file_name ?? "Nieznane"}</span>
+                <span className="text-muted-foreground">{dep.project_id ?? dep.file_name ?? t("common.unknown")}</span>
               </div>
             ))}
           </div>
@@ -533,7 +535,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
       {versions.length > 0 && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Wszystkie wersje ({versions.length})
+            {t("modDetails.allVersions", { count: versions.length })}
           </h3>
           <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar">
             {versions.map((v) => (
@@ -570,14 +572,14 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
-          Modrinth
+          {t("modDetails.modrinth")}
         </a>
         {project.source_url && (
           <a href={project.source_url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Source
+            {t("modDetails.source")}
           </a>
         )}
         {project.discord_url && (
@@ -585,7 +587,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            Discord
+            {t("modDetails.discord")}
           </a>
         )}
         {project.wiki_url && (
@@ -593,7 +595,7 @@ function ModDetails({ slug, instanceName, mcVersion, onBack, isInstalled, onUpda
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            Wiki
+            {t("modDetails.wiki")}
           </a>
         )}
       </div>
@@ -610,6 +612,7 @@ interface ModSearchResultProps {
 }
 
 function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
+  const { t } = useTranslation();
   const mainLoader = hit.categories.includes("fabric") ? "fabric" : null;
 
   return (
@@ -636,7 +639,7 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
           <h3 className="text-sm font-medium truncate">{hit.title}</h3>
           {isInstalled && (
             <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium text-emerald-400 ring-1 ring-emerald-500/20">
-              Zainstalowany
+              {t("modDetails.installed")}
             </span>
           )}
           {mainLoader && (
@@ -650,7 +653,7 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
         </p>
         <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>{hit.author}</span>
-          <span>{formatDownloads(hit.downloads)} pobrań</span>
+          <span>{formatDownloads(hit.downloads)} {t("modDetails.downloads")}</span>
           <span className="flex items-center gap-0.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             {hit.follows}
@@ -675,24 +678,24 @@ function ModSearchResult({ hit, isInstalled, onSelect }: ModSearchResultProps) {
 // ─── Filter Bar ─────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: "", label: "Wszystkie kategorie" },
-  { id: "technology", label: "Technologia" },
-  { id: "optimization", label: "Optymalizacja" },
-  { id: "adventure", label: "Przygoda" },
-  { id: "magic", label: "Magia" },
-  { id: "combat", label: "Walka" },
-  { id: "worldgen", label: "Generowanie świata" },
-  { id: "storage", label: "Przechowywanie" },
-  { id: "utility", label: "Narzędzia" },
-  { id: "decoration", label: "Dekoracje" },
-  { id: "food", label: "Jedzenie" },
-  { id: "game-mechanics", label: "Mechaniki" },
-  { id: "library", label: "Biblioteki" },
-  { id: "mobs", label: "Moby" },
-  { id: "social", label: "Społeczność" },
-  { id: "transport", label: "Transport" },
-  { id: "cursed", label: "Cursed" },
-  { id: "misc", label: "Inne" },
+  { id: "", labelKey: "search.allCategories" },
+  { id: "technology", labelKey: "categories.technology" },
+  { id: "optimization", labelKey: "categories.optimization" },
+  { id: "adventure", labelKey: "categories.adventure" },
+  { id: "magic", labelKey: "categories.magic" },
+  { id: "combat", labelKey: "categories.combat" },
+  { id: "worldgen", labelKey: "categories.worldgen" },
+  { id: "storage", labelKey: "categories.storage" },
+  { id: "utility", labelKey: "categories.utility" },
+  { id: "decoration", labelKey: "categories.decoration" },
+  { id: "food", labelKey: "categories.food" },
+  { id: "game-mechanics", labelKey: "categories.gameMechanics" },
+  { id: "library", labelKey: "categories.library" },
+  { id: "mobs", labelKey: "categories.mobs" },
+  { id: "social", labelKey: "categories.social" },
+  { id: "transport", labelKey: "categories.transport" },
+  { id: "cursed", labelKey: "categories.cursed" },
+  { id: "misc", labelKey: "categories.misc" },
 ];
 
 interface FilterBarProps {
@@ -705,14 +708,15 @@ interface FilterBarProps {
 }
 
 const SORT_OPTIONS = [
-  { id: "relevance", label: "Trafność" },
-  { id: "downloads", label: "Pobrania" },
-  { id: "follows", label: "Obserwowane" },
-  { id: "newest", label: "Najnowsze" },
-  { id: "updated", label: "Aktualizowane" },
+  { id: "relevance", labelKey: "search.relevance" },
+  { id: "downloads", labelKey: "search.downloads" },
+  { id: "follows", labelKey: "search.follows" },
+  { id: "newest", labelKey: "search.newest" },
+  { id: "updated", labelKey: "search.updated" },
 ];
 
 function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryChange, onSortChange }: FilterBarProps) {
+  const { t } = useTranslation();
   const [showMcInput, setShowMcInput] = useState(false);
   const [mcInput, setMcInput] = useState(mcVersion ?? "");
 
@@ -724,7 +728,7 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 ring-1 ring-emerald-500/20">
-        Fabric
+        {t("search.fabric")}
       </span>
       {showMcInput ? (
         <div className="flex items-center gap-1">
@@ -732,7 +736,7 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
             type="text"
             value={mcInput}
             onChange={(e) => setMcInput(e.target.value)}
-            placeholder="Np. 1.21"
+            placeholder={t("search.mcPlaceholder")}
             className="h-7 w-20 rounded-md border border-input bg-background px-2 text-xs outline-none focus:border-ring"
             onKeyDown={(e) => { if (e.key === "Enter") handleMcApply(); if (e.key === "Escape") setShowMcInput(false); }}
             autoFocus
@@ -756,7 +760,7 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
         className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground outline-none focus:border-ring"
       >
         {CATEGORIES.map((cat) => (
-          <option key={cat.id} value={cat.id}>{cat.label}</option>
+          <option key={cat.id} value={cat.id}>{t(cat.labelKey)}</option>
         ))}
       </select>
       <div className="ml-auto">
@@ -766,7 +770,7 @@ function FilterBar({ mcVersion, category, sort, onMcVersionChange, onCategoryCha
           className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground outline-none focus:border-ring"
         >
           {SORT_OPTIONS.map((opt) => (
-            <option key={opt.id} value={opt.id}>{opt.label}</option>
+            <option key={opt.id} value={opt.id}>{t(opt.labelKey)}</option>
           ))}
         </select>
       </div>
@@ -785,6 +789,7 @@ interface ModSearchProps {
 }
 
 function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuery, onUpdated }: ModSearchProps) {
+  const { t } = useTranslation();
   const {
     results,
     loading,
@@ -858,7 +863,7 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
             type="text"
             value={filters.query}
             onChange={(e) => setFilter("query", e.target.value)}
-            placeholder="Szukaj modyfikacji..."
+            placeholder={t("mods.search")}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
           />
           {filters.query && (
@@ -883,8 +888,7 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
 
       {!loading && !error && results.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          Znaleziono {totalHits} modów
-          {filters.query && <> dla "<span className="text-foreground">{filters.query}</span>"</>}
+          {t("search.resultsFor", { count: totalHits, query: filters.query })}
         </p>
       )}
 
@@ -905,7 +909,7 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
         <div className="flex items-center justify-center py-8">
           <div className="flex flex-col items-center gap-3">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-            <p className="text-xs text-muted-foreground">Szukanie modów...</p>
+            <p className="text-xs text-muted-foreground">{t("search.loading")}</p>
           </div>
         </div>
       )}
@@ -917,11 +921,11 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <div className="flex-1">
-              <p className="text-xs font-medium text-destructive">Błąd Modrinth</p>
+              <p className="text-xs font-medium text-destructive">{t("search.error")}</p>
               <p className="mt-0.5 text-xs text-destructive/80">{error}</p>
             </div>
             <button onClick={() => setFilter("query", filters.query)} className="rounded bg-destructive/10 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/20 transition-colors">
-              Spróbuj ponownie
+              {t("search.retry")}
             </button>
           </div>
         </div>
@@ -932,8 +936,8 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
-          <p className="text-sm text-muted-foreground">Brak wyników dla "<span className="text-foreground">{filters.query}</span>"</p>
-          <p className="text-xs text-muted-foreground/60">Spróbuj innego zapytania lub zmień filtry</p>
+          <p className="text-sm text-muted-foreground">{t("search.noResults", { query: filters.query })}</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.noResultsHint")}</p>
         </div>
       )}
 
@@ -942,8 +946,8 @@ function ModSearch({ instanceName, instanceMcVersion, installedMods, initialQuer
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
           </svg>
-          <p className="text-sm text-muted-foreground">Wpisz nazwę moda, aby rozpocząć wyszukiwanie</p>
-          <p className="text-xs text-muted-foreground/60">Dostępne przez API Modrinth</p>
+          <p className="text-sm text-muted-foreground">{t("search.startHint")}</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.startHintSub")}</p>
         </div>
       )}
     </div>

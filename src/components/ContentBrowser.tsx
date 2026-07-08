@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useModSearch } from "@/hooks/useModSearch";
 import { getProject, getProjectVersions, formatDownloads } from "@/lib/modrinth";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ interface ContentDetailsProps {
 }
 
 function ContentDetails({ slug, projectType, instanceName, folder, onBack, onInstalled }: ContentDetailsProps) {
+  const { t } = useTranslation();
   const [project, setProject] = useState<ModrinthProject | null>(null);
   const [versions, setVersions] = useState<ModrinthVersion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Nie udało się załadować szczegółów.");
+          setError(err instanceof Error ? err.message : t("content.loadError"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -108,8 +110,8 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
   if (error || !project) {
     return (
       <div className="flex flex-col items-center gap-3 py-12">
-        <p className="text-sm text-destructive">{error || "Nie znaleziono projektu."}</p>
-        <Button variant="ghost" size="sm" onClick={onBack}>Powrót do wyników</Button>
+        <p className="text-sm text-destructive">{error || t("modDetails.notFound")}</p>
+        <Button variant="ghost" size="sm" onClick={onBack}>{t("modDetails.backToResults")}</Button>
       </div>
     );
   }
@@ -128,7 +130,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6" />
         </svg>
-        Powrót do wyników
+        {t("modDetails.backToResults")}
       </button>
 
       {/* Header */}
@@ -152,7 +154,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
             <h2 className="text-xl font-semibold truncate">{project.title}</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            {project.author} · {formatDownloads(project.downloads)} pobrań
+            {project.author} · {formatDownloads(project.downloads)} {t("modDetails.downloads")}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
             {project.loaders.slice(0, 3).map((l) => (
@@ -176,7 +178,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
 
       {/* Description */}
       <div className="rounded-lg border border-border/50 bg-card/50 p-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Opis</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t("modDetails.description")}</h3>
         <div
           className={cn(
             "prose prose-sm prose-invert max-w-none text-sm text-muted-foreground",
@@ -190,7 +192,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
             onClick={() => setShowFullBody(!showFullBody)}
             className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
           >
-            {showFullBody ? "Pokaż mniej" : "Pokaż więcej"}
+            {showFullBody ? t("modDetails.showLess") : t("modDetails.showMore")}
           </button>
         )}
       </div>
@@ -199,7 +201,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
       {selectedVersion && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Wybierz wersję
+            {t("modDetails.selectVersion")}
           </h3>
           <div className="flex items-center gap-3">
             <select
@@ -225,7 +227,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
               {installing ? (
                 <>
                   <div className="h-3 w-3 mr-1.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Instalowanie...
+                  {t("content.installing")}
                 </>
               ) : (
                 <>
@@ -234,7 +236,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
-                  Zainstaluj
+                  {t("content.install")}
                 </>
               )}
             </Button>
@@ -244,7 +246,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
             <span>{selectedVersion.version_number}</span>
             <span>{selectedVersion.loaders.join(", ")}</span>
             <span>{selectedVersion.game_versions.join(", ")}</span>
-            <span>{formatDownloads(selectedVersion.downloads)} pobrań</span>
+            <span>{formatDownloads(selectedVersion.downloads)} {t("modDetails.downloads")}</span>
             {selectedVersion.version_type !== "release" && (
               <span className={cn("uppercase font-medium", selectedVersion.version_type === "beta" ? "text-amber-400" : "text-red-400")}>
                 {selectedVersion.version_type}
@@ -258,7 +260,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
       {versions.length > 0 && (
         <div className="rounded-lg border border-border/50 bg-card/50 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Wszystkie wersje ({versions.length})
+            {t("modDetails.allVersions", { count: versions.length })}
           </h3>
           <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar">
             {versions.map((v) => (
@@ -295,14 +297,14 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
-          Modrinth
+          {t("modDetails.modrinth")}
         </a>
         {project.source_url && (
           <a href={project.source_url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Source
+            {t("modDetails.source")}
           </a>
         )}
         {project.discord_url && (
@@ -310,7 +312,7 @@ function ContentDetails({ slug, projectType, instanceName, folder, onBack, onIns
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            Discord
+            {t("modDetails.discord")}
           </a>
         )}
       </div>
@@ -326,6 +328,7 @@ interface ContentSearchResultProps {
 }
 
 function ContentSearchResult({ hit, onSelect }: ContentSearchResultProps) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={() => onSelect(hit.slug)}
@@ -355,7 +358,7 @@ function ContentSearchResult({ hit, onSelect }: ContentSearchResultProps) {
         </p>
         <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
           <span>{hit.author}</span>
-          <span>{formatDownloads(hit.downloads)} pobrań</span>
+          <span>{formatDownloads(hit.downloads)} {t("modDetails.downloads")}</span>
           <span className="flex items-center gap-0.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             {hit.follows}
@@ -405,6 +408,7 @@ interface ContentBrowserProps {
 }
 
 function ContentBrowser({ projectType, placeholder, instanceName, folder, onInstalled }: ContentBrowserProps) {
+  const { t } = useTranslation();
   const {
     results,
     loading,
@@ -475,8 +479,7 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
       {/* Results info */}
       {!loading && !error && results.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          Znaleziono {totalHits} wyników
-          {filters.query && <> dla "<span className="text-foreground">{filters.query}</span>"</>}
+          {t("search.resultsFor", { count: totalHits, query: filters.query })}
         </p>
       )}
 
@@ -500,7 +503,7 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
             onClick={loadMore}
             className="text-xs text-muted-foreground"
           >
-            Załaduj więcej
+            {t("content.loadMore")}
           </Button>
         </div>
       )}
@@ -510,7 +513,7 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
         <div className="flex items-center justify-center py-8">
           <div className="flex flex-col items-center gap-3">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-purple-500" />
-            <p className="text-xs text-muted-foreground">Szukanie...</p>
+            <p className="text-xs text-muted-foreground">{t("content.searching")}</p>
           </div>
         </div>
       )}
@@ -523,11 +526,11 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <div className="flex-1">
-              <p className="text-xs font-medium text-destructive">Błąd Modrinth</p>
+              <p className="text-xs font-medium text-destructive">{t("search.error")}</p>
               <p className="mt-0.5 text-xs text-destructive/80">{error}</p>
             </div>
             <button onClick={() => setFilter("query", filters.query)} className="rounded bg-destructive/10 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/20 transition-colors">
-              Spróbuj ponownie
+              {t("search.retry")}
             </button>
           </div>
         </div>
@@ -539,8 +542,8 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/30">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
-          <p className="text-sm text-muted-foreground">Brak wyników dla "<span className="text-foreground">{filters.query}</span>"</p>
-          <p className="text-xs text-muted-foreground/60">Spróbuj innego zapytania</p>
+          <p className="text-sm text-muted-foreground">{t("search.noResults", { query: filters.query })}</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.noResultsHint")}</p>
         </div>
       )}
 
@@ -551,7 +554,7 @@ function ContentBrowser({ projectType, placeholder, instanceName, folder, onInst
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
           </svg>
           <p className="text-sm text-muted-foreground">{placeholder}</p>
-          <p className="text-xs text-muted-foreground/60">Dostępne przez API Modrinth</p>
+          <p className="text-xs text-muted-foreground/60">{t("search.startHintSub")}</p>
         </div>
       )}
     </div>

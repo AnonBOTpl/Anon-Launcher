@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import SettingsDialog from "@/components/SettingsDialog";
 import AccountSwitcher from "@/components/AccountSwitcher";
@@ -7,7 +8,7 @@ import AccountSwitcher from "@/components/AccountSwitcher";
 const navItems = [
   {
     path: "/",
-    label: "Dashboard",
+    label: "sidepanel.dashboard",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +30,7 @@ const navItems = [
   },
   {
     path: "/create",
-    label: "Nowa instancja",
+    label: "sidepanel.create",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -51,6 +52,7 @@ const navItems = [
 ];
 
 function Sidebar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(() => {
@@ -89,7 +91,7 @@ function Sidebar() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              title={item.label}
+              title={t(item.label)}
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200",
                 isActive
@@ -104,10 +106,10 @@ function Sidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="flex flex-col items-center gap-3 pb-4">        {/* Settings */}
+      <div className="flex flex-col items-center gap-3 pb-4">          {/* Settings */}
           <SettingsDialog>
             <button
-              title="Ustawienia"
+              title={t("settings.title")}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <svg
@@ -130,7 +132,7 @@ function Sidebar() {
           {/* Theme toggle */}
           <button
           onClick={toggleTheme}
-          title={isDark ? "Włącz jasny motyw" : "Włącz ciemny motyw"}
+          title={isDark ? t("settings.light") : t("settings.dark")}
           className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           {isDark ? (

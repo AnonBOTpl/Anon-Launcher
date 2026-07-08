@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useInstances } from "@/hooks/useInstances";
 import InstanceGrid from "@/components/InstanceGrid";
 import ImportInstanceDialog from "@/components/ImportInstanceDialog";
 
 function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { instances, loading, error, refresh } = useInstances();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -14,9 +16,9 @@ function Dashboard() {
       {/* Top bar */}
       <div className="flex items-center justify-between border-b border-border/50 px-8 py-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-xl font-bold tracking-tight">{t("dashboard.title")}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Zarządzaj swoimi instancjami Minecraft
+            {t("dashboard.subtitle")}
           </p>
         </div>
 
@@ -39,7 +41,7 @@ function Dashboard() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Nowa
+            {t("dashboard.new")}
           </button>
           <button
             onClick={() => setImportDialogOpen(true)}
@@ -60,7 +62,7 @@ function Dashboard() {
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            Importuj ZIP
+            {t("dashboard.importZip")}
           </button>
           <button
             onClick={refresh}
@@ -82,7 +84,7 @@ function Dashboard() {
               <path d="M21 12a9 9 0 1 1-9-9" />
               <path d="M21 3v5h-5" />
             </svg>
-            Odśwież
+            {t("dashboard.refresh")}
           </button>
         </div>
       </div>
@@ -101,7 +103,7 @@ function Dashboard() {
           <div className="flex items-center justify-center py-32">
             <div className="flex flex-col items-center gap-4">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-purple-500" />
-              <p className="text-sm text-muted-foreground">Ładowanie instancji...</p>
+              <p className="text-sm text-muted-foreground">{t("dashboard.loading")}</p>
             </div>
           </div>
         )}
@@ -127,9 +129,9 @@ function Dashboard() {
                 <line x1="12" y1="17" x2="12" y2="21" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold">Brak instancji</h3>
+            <h3 className="text-xl font-semibold">{t("dashboard.noInstances")}</h3>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Utwórz swoją pierwszą instancję Minecraft, aby rozpocząć.
+              {t("dashboard.noInstancesHint")}
             </p>
             <button
               onClick={() => navigate("/create")}
@@ -149,7 +151,7 @@ function Dashboard() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Nowa instancja
+              {t("dashboard.new")}
             </button>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useAuth } from "@/hooks/useAuth";
 import * as accountsApi from "@/lib/accounts";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function AccountSwitcher() {
+  const { t } = useTranslation();
   const { accounts, activeAccount, switchAccount, loading, removeAccount, refresh } = useAccounts();
   const { startLogin, flowState, session } = useAuth();
   const [open, setOpen] = useState(false);
@@ -64,7 +66,7 @@ function AccountSwitcher() {
       {/* Sidebar button — shows actual avatar thumbnail when logged in */}
       <button
         onClick={() => setOpen(true)}
-        title={activeAccount ? activeAccount.username : "Konto"}
+        title={activeAccount ? activeAccount.username : t("accounts.title")}
         className="group relative flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors hover:bg-accent cursor-pointer overflow-hidden"
       >
         {activeAccount && !sidebarImgError ? (
@@ -91,7 +93,7 @@ function AccountSwitcher() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogTitle className="sr-only">Zarządzanie kontami</DialogTitle>
+          <DialogTitle className="sr-only">{t("accounts.title")}</DialogTitle>
 
           {/* ─── Profile Preview Section ─────────────────────────── */}
           {activeAccount ? (
@@ -118,10 +120,10 @@ function AccountSwitcher() {
                 <div className="mt-1.5 flex items-center justify-center gap-3 text-[11px]">
                   <span className="flex items-center gap-1 text-emerald-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Online
+                    {t("accounts.online")}
                   </span>
                   <span className="text-muted-foreground">·</span>
-                  <span className="text-muted-foreground">Konto Microsoft</span>
+                  <span className="text-muted-foreground">{t("accounts.microsoft")}</span>
                 </div>
               </div>
 
@@ -138,7 +140,7 @@ function AccountSwitcher() {
                     <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
                     <path d="M3 12a9 9 0 0 0 15 6.7L21 16" />
                   </svg>
-                  Odśwież
+                  {t("accounts.refresh")}
                 </Button>
                 <Button
                   size="sm"
@@ -151,7 +153,7 @@ function AccountSwitcher() {
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                   </svg>
-                  Wyloguj
+                  {t("accounts.logout")}
                 </Button>
               </div>
             </div>
@@ -164,8 +166,8 @@ function AccountSwitcher() {
                   <path d="M20 21a8 8 0 1 0-16 0" />
                 </svg>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">Nie jesteś zalogowany</p>
-              <p className="text-xs text-muted-foreground/60">Dodaj konto Microsoft, aby grać</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t("accounts.notLoggedIn")}</p>
+              <p className="text-xs text-muted-foreground/60">{t("accounts.notLoggedInHint")}</p>
             </div>
           )}
 
@@ -173,7 +175,7 @@ function AccountSwitcher() {
           <div className="flex items-center gap-3 py-1">
             <div className="flex-1 h-px bg-border/50" />
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-              Konta
+              {t("accounts.title")}
             </span>
             <div className="flex-1 h-px bg-border/50" />
           </div>
@@ -186,7 +188,7 @@ function AccountSwitcher() {
               </div>
             ) : accounts.length === 0 ? (
               <div className="py-4 text-center text-xs text-muted-foreground">
-                Brak zapisanych kont
+                {t("accounts.noAccounts")}
               </div>
             ) : (
               accounts.map((account) => (
@@ -220,7 +222,7 @@ function AccountSwitcher() {
                       {account.username}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      Konto Microsoft
+                      {t("accounts.microsoft")}
                     </div>
                   </div>
                   {account.isActive && (
@@ -263,7 +265,7 @@ function AccountSwitcher() {
                 <rect x="2" y="13" width="9" height="9" />
                 <rect x="13" y="13" width="9" height="9" />
               </svg>
-              Dodaj konto
+              {t("accounts.add")}
             </Button>
           </div>
         </DialogContent>
