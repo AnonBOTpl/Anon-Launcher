@@ -803,6 +803,12 @@ fn restore_snapshot(
     snapshot::restore_snapshot(&app_data_dir, &instance_name, &timestamp, &mode).map_err(|e| e.to_string())
 }
 
+/// Force-close the launcher (leaves Minecraft child process running).
+#[tauri::command]
+fn close_app() {
+    std::process::exit(0);
+}
+
 fn get_app_data_dir(app_handle: &AppHandle, state: &State<'_, AppState>) -> Result<std::path::PathBuf, String> {
     let mut guard = state.app_data_dir.lock().map_err(|e| format!("Lock error: {}", e))?;
 
@@ -905,6 +911,7 @@ pub fn run() {
             read_crash_report,
             delete_crash_report,
             delete_all_crash_reports,
+            close_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

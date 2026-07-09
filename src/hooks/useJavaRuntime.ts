@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { JavaVersionInfo, DownloadStatus } from "@/lib/java";
 import { fetchJavaVersions, downloadJava, getJavaPath } from "@/lib/java";
 import { getJavaVersionForMc } from "@/lib/java";
+import i18n from "@/lib/i18n";
 
 interface JavaState {
   versions: JavaVersionInfo[];
@@ -31,7 +32,7 @@ export function useJavaRuntime() {
           ? err
           : err instanceof Error
             ? err.message
-            : "Failed to fetch Java versions";
+            : i18n.t("java.errors.fetchFailed");
       setState((prev) => ({ ...prev, loading: false, error: message }));
     }
   }, []);
@@ -62,7 +63,7 @@ export function useJavaRuntime() {
             ? err
             : err instanceof Error
               ? err.message
-              : "Download failed";
+              : i18n.t("java.errors.downloadFailed");
         console.error("Java download error:", err);
         setState((prev) => ({
           ...prev,

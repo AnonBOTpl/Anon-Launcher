@@ -1473,6 +1473,7 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 
 #### ❌ Do zrobienia
 - [ ] **TASK-29** — Testy końcowe
+- [ ] **TASK-GRA** — Zakładka Gra w InstanceTabs (panel przeglądu instancji)
 
 #### ❌ Anulowane / Pominięte
 - ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar~~
@@ -1482,3 +1483,41 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 - ~~**TASK-18** — Pobieranie assetów~~ ✅
 - ~~**TASK-25** — Crash-reporty~~
 - ~~**TASK-28c** — Toasty i notyfikacje~~
+
+## 2026-07-09 — I18N audit: hardcoded stringi + Settings cleanup + close-on-launch + force exit
+
+### 🔍 I18N audit — pozostałe hardcoded stringi (14 plików)
+
+**Znalezione i naprawione:**
+| Plik | Fix |
+|---|---|
+| `CreateInstanceForm.tsx` | 3 Polish stringi w `validateModpack()` → `t("create.errors.*")` |
+| `InstanceTabs.tsx` | 3 Iris errory (`throw new Error(...)`) → `t("instance.iris.*")` |
+| `HeroCard.tsx` / `InstanceCard.tsx` | `` `Fabric ${version}` `` → `t("loader.fabricVersion")` |
+| `RestoreSnapshotDialog.tsx` | Hardcoded `"przywróć"` → `t("snapshots.restoreConfirmValue")` |
+| `useOpenFolder.ts`, `useModUpdates.ts`, `useModSearch.ts`, `useMods.ts`, `useCloneInstance.ts`, `useSnapshots.ts`, `useJavaRuntime.ts`, `useAuth.ts` | Dodano `i18n.t()` dla fallback errorów |
+| `lib/modrinth.ts` | 4 Polish API error messages → `modrinth.api.*` z `i18n.t()` |
+| `en/pl.json` | ~25 nowych kluczy, fix duplikatu `errors.loadFailed` |
+
+### 🧹 Settings cleanup — usunięto Microsoft info
+
+- **SettingsDialog.tsx** — usunięto sekcję z `microsoftReady`, `microsoftInfo`, `microsoftSidebarHint`
+- **Locale** — usunięto zbędne klucze, dodano `settings.description`
+- **InstanceTabs.tsx** — hardcoded `"Ustawienia gry."` → `t("instance.gameTabPlaceholder")`
+
+### 🔧 Force exit + close-on-launch
+
+**Problem:** Gdy zamykano launcher, proces wisiał w konsoli z powodu background reader threads blokujących na `reader.lines()`.
+
+**Rozwiązanie (B + C):**
+- **`process_manager.rs`** — usunięto `stop_all()` (nie zabijamy gry)
+- **`lib.rs`** — dodano komendę `close_app` (`std::process::exit(0)`). `on_window_event` usunięty (naturalne Tauri shutdown)
+- **`SettingsDialog.tsx`** — toggle "Zamknij launcher po uruchomieniu gry" (localStorage `anon_close_on_launch`)
+- **`InstanceView.tsx`** — po udanym starcie sprawdza ustawienie i woła `invoke("close_app")`
+
+**Znany problem — dev mode:**
+- W trybie `tauri dev` konsola pokazuje `Chrome_WidgetWin_0 Error 1412` przy zamykaniu — to błąd CEF/WebView2 spowodowany `process::exit(0)` przerywającym cleanup okna. Występuje TYLKO w dev mode (przy `close_app`). W release buildzie (`cargo tauri build`) aplikacja jest pojedynczym `.exe` — brak dev serwera, proces nie wisi. Do obserwacji na release.
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)

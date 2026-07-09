@@ -3,6 +3,7 @@
  * Docs: https://docs.modrinth.com/api/
  */
 
+import i18n from "@/lib/i18n";
 import type {
   ModrinthSearchResponse,
   ModrinthProject,
@@ -75,9 +76,9 @@ export async function searchMods(params: {
 
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error("Przekroczono limit zapytań do Modrinth. Spróbuj za chwilę.");
+      throw new Error(i18n.t("modrinth.api.rateLimited"));
     }
-    throw new Error(`Błąd API Modrinth: ${response.status} ${response.statusText}`);
+    throw new Error(i18n.t("modrinth.api.apiError", { status: response.status, statusText: response.statusText }));
   }
 
   const data: ModrinthSearchResponse = await response.json();
@@ -101,12 +102,12 @@ export async function getProject(slug: string): Promise<ModrinthProject> {
 
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error("Przekroczono limit zapytań do Modrinth.");
+      throw new Error(i18n.t("modrinth.api.rateLimited"));
     }
     if (response.status === 404) {
-      throw new Error("Projekt nie znaleziony.");
+      throw new Error(i18n.t("modrinth.api.projectNotFound"));
     }
-    throw new Error(`Błąd API: ${response.status}`);
+    throw new Error(i18n.t("modrinth.api.apiErrorSimple", { status: response.status }));
   }
 
   const data: ModrinthProject = await response.json();
@@ -137,9 +138,9 @@ export async function getProjectVersions(
 
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error("Przekroczono limit zapytań do Modrinth.");
+      throw new Error(i18n.t("modrinth.api.rateLimited"));
     }
-    throw new Error(`Błąd API: ${response.status}`);
+    throw new Error(i18n.t("modrinth.api.apiErrorSimple", { status: response.status }));
   }
 
   let data: ModrinthVersion[] = await response.json();

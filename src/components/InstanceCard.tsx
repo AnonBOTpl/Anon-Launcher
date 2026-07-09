@@ -217,8 +217,8 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
           )}
         >
           {instance.loader === "vanilla"
-            ? "Vanilla"
-            : `Fabric ${instance.loaderVersion}`}
+            ? t("loader.vanilla")
+            : t("loader.fabricVersion", { version: instance.loaderVersion })}
         </span>
       </div>
     </div>

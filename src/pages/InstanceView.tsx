@@ -235,6 +235,15 @@ function InstanceView() {
       // Clear download progress — actual launch starting
       setDownloadProgress(null);
       await launch(instanceName, javaPath, args);
+
+      // Auto-close launcher if setting is enabled
+      if (localStorage.getItem("anon_close_on_launch") === "true") {
+        try {
+          await invoke("close_app");
+        } catch {
+          // If close_app fails (e.g., already shutting down), ignore
+        }
+      }
     } catch (err) {
       // Tauri invoke może rzucać Error, string, lub obiekt z "message"
       let message: string;

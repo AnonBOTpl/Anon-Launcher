@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import * as snapshotApi from "@/lib/snapshot";
+import i18n from "@/lib/i18n";
 import type { SnapshotInfo, RestoreResult } from "@/lib/snapshot";
 
 interface UseSnapshotsReturn {
@@ -36,7 +37,7 @@ export function useSnapshots(instanceName: string): UseSnapshotsReturn {
       const list = await snapshotApi.listSnapshots(instanceName);
       setSnapshots(list);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load snapshots");
+      setError(err instanceof Error ? err.message : i18n.t("snapshots.loadError"));
     } finally {
       setLoading(false);
     }

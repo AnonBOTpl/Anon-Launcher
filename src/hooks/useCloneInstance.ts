@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/lib/i18n";
 import type { InstanceManifest } from "@/types/instance";
 
 interface UseCloneInstanceResult {
@@ -25,7 +26,7 @@ export function useCloneInstance(): UseCloneInstanceResult {
       return result;
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Nie udało się sklonować instancji";
+        err instanceof Error ? err.message : i18n.t("clone.errors.cloneFailed");
       setError(message);
       throw new Error(message);
     } finally {

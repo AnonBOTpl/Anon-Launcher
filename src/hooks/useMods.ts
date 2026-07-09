@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import * as modApi from "@/lib/mod-installer";
+import i18n from "@/lib/i18n";
 import type { InstalledMod } from "@/lib/mod-installer";
 
 export function useMods(instanceName: string | null) {
@@ -15,7 +16,7 @@ export function useMods(instanceName: string | null) {
       const list = await modApi.listMods(instanceName);
       setMods(list);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nie udało się załadować modów");
+      setError(err instanceof Error ? err.message : i18n.t("mods.loadError"));
     } finally {
       setLoading(false);
     }

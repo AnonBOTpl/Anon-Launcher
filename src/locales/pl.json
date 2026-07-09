@@ -24,6 +24,11 @@
     "running": "Uruchomiona",
     "unavailableWhileRunning": "Niedostępne podczas gry",
     "installingIris": "Instalowanie Iris...",
+    "iris": {
+      "noVersionForMc": "Nie znaleziono wersji Iris dla Minecraft {{mcVersion}}",
+      "noMatchingVersion": "Nie znaleziono pasującej wersji Iris",
+      "noDownloadFile": "Nie znaleziono pliku do pobrania dla Iris"
+    },
     "tabs": {
       "game": "Gra",
       "mods": "Mody",
@@ -35,6 +40,7 @@
     },
     "notFound": "Instancja nie znaleziona",
     "notFoundHint": "Instancja \"{{name}}\" nie istnieje na dysku.",
+    "gameTabPlaceholder": "Podgląd instancji pojawi się tutaj.",
     "backToDashboard": "Powrót do Dashboardu",
     "selectToManage": "Wybierz instancję, aby zarządzać {{type}}",
     "opening": "Otwieranie..."
@@ -118,6 +124,7 @@
     "cancel": "Anuluj",
     "unavailable": "Niedostępne podczas gry",
     "categories": "Kategorie",
+    "updateCheckFailed": "Nie udało się sprawdzić aktualizacji",
     "checking": "Sprawdzanie...",
     "addModHint": "Kliknij \"Dodaj mod\", aby wyszukać i zainstalować",
     "snapshotBeforeUpdate": "Snapshot przed aktualizacją",
@@ -187,12 +194,14 @@
     "cancel": "Anuluj",
     "modsCount": "{{count}} modów",
     "emptyHint": "Utwórz snapshot, aby zabezpieczyć instancję przed aktualizacjami",
+    "loadError": "Nie udało się załadować snapshotów",
     "unavailable": "Niedostępne podczas gry",
     "restoreTitle": "Przywróć snapshot",
     "restoreFullDesc": "Cała instancja zostanie zastąpiona kopią z snapshotu. Bieżące dane zostaną utracone.",
     "restoreMetaDesc": "Zostanie przywrócona konfiguracja i lista modów. Pliki JAR nie zostaną pobrane.",
     "restoreWarning": "Ta operacja usunie bieżący stan instancji i zastąpi go stanem z snapshotu.",
     "restoreConfirmLabel": "Wpisz \"przywróć\", aby potwierdzić:",
+    "restoreConfirmValue": "przywróć",
     "restorePlaceholder": "przywróć",
     "restoring": "Przywracanie..."
   },
@@ -207,7 +216,12 @@
     "refresh": "Odśwież",
     "uuid": "UUID",
     "online": "Online",
-    "noAccounts": "Brak zapisanych kont"
+    "noAccounts": "Brak zapisanych kont",
+    "errors": {
+      "codeExchangeFailed": "Wymiana kodu nie powiodła się",
+      "loginFailed": "Logowanie przez przeglądarkę nie powiodło się",
+      "startFailed": "Nie udało się rozpocząć logowania"
+    }
   },
   "settings": {
     "title": "Ustawienia",
@@ -215,11 +229,11 @@
     "theme": "Motyw",
     "dark": "Ciemny",
     "light": "Jasny",
+    "description": "Ustawienia języka i wyglądu AnonLauncher.",
+    "afterLaunch": "Po uruchomieniu gry",
+    "afterLaunchDesc": "Zamknij AnonLauncher automatycznie po starcie gry",
     "clientId": "Azure Client ID",
-    "clientIdHint": "Wpisz własny Client ID aplikacji Azure do autoryzacji Microsoft",
-    "microsoftReady": "AnonLauncher jest gotowy do użycia z kontem Microsoft.",
-    "microsoftInfo": "Logowanie Microsoft jest fabrycznie skonfigurowane z Client ID zatwierdzonym przez Microsoft dla Minecraft.",
-    "microsoftSidebarHint": "Kliknij przycisk \"Zaloguj przez Microsoft\" w sidebarze, aby zalogować się na swoje konto i rozpocząć grę."
+    "clientIdHint": "Wpisz własny Client ID aplikacji Azure do autoryzacji Microsoft"
   },
   "update": {
     "available": "Dostępna aktualizacja",
@@ -256,7 +270,8 @@
     "refresh": "Odśwież",
     "warning": "Ostrzeżenie",
     "fallback": "Steve (fallback)",
-    "unknown": "Nieznane"
+    "unknown": "Nieznane",
+    "unknownError": "Wystąpił nieznany błąd"
   },
   "errors": {
     "launchFailed": "Nie udało się uruchomić gry",
@@ -268,7 +283,7 @@
     "loginRequired": "Nie masz zalogowanego konta Microsoft. Zaloguj się przez przycisk w sidebarze.",
     "noFabricVersion": "Brak wybranej wersji Fabric. Otwórz Edytuj i wybierz wersję loadera.",
     "unknown": "Wystąpił nieznany błąd",
-    "loadFailed": "Nie udało się załadować"
+    "folderOpenFailed": "Nie udało się otworzyć folderu"
   },
   "sidepanel": {
     "dashboard": "Dashboard",
@@ -364,6 +379,14 @@
     "startHint": "Wpisz nazwę paczki modów, aby rozpocząć wyszukiwanie",
     "instanceCreatedWith": "Instancja zostanie utworzona z: Minecraft {{mcVersion}} + {{loader}} {{version}}"
   },
+  "modrinth": {
+    "api": {
+      "rateLimited": "Przekroczono limit zapytań do Modrinth. Spróbuj za chwilę.",
+      "apiError": "Błąd API Modrinth: {{status}} {{statusText}}",
+      "projectNotFound": "Projekt nie znaleziony.",
+      "apiErrorSimple": "Błąd API: {{status}}"
+    }
+  },
   "categories": {
     "technology": "Technologia",
     "optimization": "Optymalizacja",
@@ -421,7 +444,8 @@
       "nameRequired": "Nazwa jest wymagana",
       "nameMinLength": "Nazwa musi mieć co najmniej 2 znaki",
       "nameMaxLength": "Nazwa może mieć maksymalnie 64 znaki",
-      "nameMustDiffer": "Nowa nazwa musi różnić się od oryginalnej"
+      "nameMustDiffer": "Nowa nazwa musi różnić się od oryginalnej",
+      "cloneFailed": "Nie udało się sklonować instancji"
     }
   },
   "export": {
@@ -473,7 +497,9 @@
     "downloadHint": " Kliknij Pobierz, aby automatycznie ściągnąć.",
     "customPathHint": " Wybierz inną wersję lub użyj własnej ścieżki.",
     "errors": {
-      "invalidFile": "Nieprawidłowy plik Java"
+      "invalidFile": "Nieprawidłowy plik Java",
+      "fetchFailed": "Nie udało się pobrać wersji Java",
+      "downloadFailed": "Pobieranie nie powiodło się"
     }
   },
   "version": {
@@ -494,6 +520,8 @@
   "loader": {
     "title": "Loader",
     "selected": "Wybrany",
+    "vanilla": "Vanilla",
+    "fabricVersion": "Fabric {{version}}",
     "vanillaDesc": "Czysty Minecraft, bez modyfikacji",
     "fabricDesc": "Lekki loader modów",
     "selectMcFirst": "Najpierw wybierz wersję Minecraft",

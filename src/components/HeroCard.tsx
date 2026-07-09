@@ -44,8 +44,8 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
   const badge = (loaderBadge[instance.loader] ?? loaderBadge.vanilla)!;
   const loaderLabel =
     instance.loader === "fabric"
-      ? `Fabric ${instance.loaderVersion}`
-      : "Vanilla";
+      ? t("loader.fabricVersion", { version: instance.loaderVersion })
+      : t("loader.vanilla");
 
   const isRunning = launchStatus.type === "running";
 

@@ -24,6 +24,11 @@
     "running": "Running",
     "unavailableWhileRunning": "Unavailable while game is running",
     "installingIris": "Installing Iris...",
+    "iris": {
+      "noVersionForMc": "No Iris version found for Minecraft {{mcVersion}}",
+      "noMatchingVersion": "No matching Iris version found",
+      "noDownloadFile": "No download file found for Iris"
+    },
     "tabs": {
       "game": "Game",
       "mods": "Mods",
@@ -35,6 +40,7 @@
     },
     "notFound": "Instance not found",
     "notFoundHint": "Instance \"{{name}}\" does not exist on disk.",
+    "gameTabPlaceholder": "Overview of your instance will appear here.",
     "backToDashboard": "Back to Dashboard",
     "selectToManage": "Select an instance to manage {{type}}",
     "opening": "Opening..."
@@ -118,6 +124,7 @@
     "cancel": "Cancel",
     "unavailable": "Unavailable while game is running",
     "categories": "Categories",
+    "updateCheckFailed": "Failed to check for updates",
     "checking": "Checking...",
     "addModHint": "Click \"Add mod\" to search and install",
     "snapshotBeforeUpdate": "Snapshot before update",
@@ -187,12 +194,14 @@
     "cancel": "Cancel",
     "modsCount": "{{count}} mods",
     "emptyHint": "Create a snapshot to backup your instance before updates",
+    "loadError": "Failed to load snapshots",
     "unavailable": "Unavailable while game is running",
     "restoreTitle": "Restore snapshot",
     "restoreFullDesc": "The entire instance will be replaced with the snapshot copy. Current data will be lost.",
     "restoreMetaDesc": "Configuration and mod list will be restored. JAR files will not be downloaded.",
     "restoreWarning": "This operation will delete the current instance state and replace it with the snapshot state.",
     "restoreConfirmLabel": "Type \"restore\" to confirm:",
+    "restoreConfirmValue": "restore",
     "restorePlaceholder": "restore",
     "restoring": "Restoring..."
   },
@@ -207,7 +216,12 @@
     "refresh": "Refresh",
     "uuid": "UUID",
     "online": "Online",
-    "noAccounts": "No saved accounts"
+    "noAccounts": "No saved accounts",
+    "errors": {
+      "codeExchangeFailed": "Code exchange failed",
+      "loginFailed": "Browser login failed",
+      "startFailed": "Failed to start login"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -215,11 +229,11 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
+    "description": "Language preferences for AnonLauncher.",
+    "afterLaunch": "After launching game",
+    "afterLaunchDesc": "Close AnonLauncher automatically after launching the game",
     "clientId": "Azure Client ID",
-    "clientIdHint": "Enter your own Azure App Client ID for Microsoft authentication",
-    "microsoftReady": "AnonLauncher is ready to use with your Microsoft account.",
-    "microsoftInfo": "Microsoft login is pre-configured with a Client ID approved by Microsoft for Minecraft.",
-    "microsoftSidebarHint": "Click the \"Sign in with Microsoft\" button in the sidebar to log in and start playing."
+    "clientIdHint": "Enter your own Azure App Client ID for Microsoft authentication"
   },
   "update": {
     "available": "Update available",
@@ -256,7 +270,8 @@
     "refresh": "Refresh",
     "warning": "Warning",
     "fallback": "Steve (fallback)",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "unknownError": "An unknown error occurred"
   },
   "errors": {
     "launchFailed": "Failed to launch game",
@@ -268,7 +283,7 @@
     "loginRequired": "You are not logged in with a Microsoft account. Log in via the sidebar.",
     "noFabricVersion": "No Fabric version selected. Open Edit and select a loader version.",
     "unknown": "An unknown error occurred",
-    "loadFailed": "Failed to load"
+    "folderOpenFailed": "Failed to open folder"
   },
   "sidepanel": {
     "dashboard": "Dashboard",
@@ -364,6 +379,14 @@
     "startHint": "Type a modpack name to start searching",
     "instanceCreatedWith": "Instance will be created with: Minecraft {{mcVersion}} + {{loader}} {{version}}"
   },
+  "modrinth": {
+    "api": {
+      "rateLimited": "Modrinth API rate limit exceeded. Try again later.",
+      "apiError": "Modrinth API error: {{status}} {{statusText}}",
+      "projectNotFound": "Project not found.",
+      "apiErrorSimple": "API error: {{status}}"
+    }
+  },
   "categories": {
     "technology": "Technology",
     "optimization": "Optimization",
@@ -421,7 +444,8 @@
       "nameRequired": "Name is required",
       "nameMinLength": "Name must be at least 2 characters",
       "nameMaxLength": "Name can be at most 64 characters",
-      "nameMustDiffer": "New name must differ from the original"
+      "nameMustDiffer": "New name must differ from the original",
+      "cloneFailed": "Failed to clone instance"
     }
   },
   "export": {
@@ -473,7 +497,9 @@
     "downloadHint": " Click Download to auto-install.",
     "customPathHint": " Select another version or use a custom path.",
     "errors": {
-      "invalidFile": "Invalid Java file"
+      "invalidFile": "Invalid Java file",
+      "fetchFailed": "Failed to fetch Java versions",
+      "downloadFailed": "Download failed"
     }
   },
   "version": {
@@ -494,6 +520,8 @@
   "loader": {
     "title": "Loader",
     "selected": "Selected",
+    "vanilla": "Vanilla",
+    "fabricVersion": "Fabric {{version}}",
     "vanillaDesc": "Pure Minecraft, no modifications",
     "fabricDesc": "Lightweight mod loader",
     "selectMcFirst": "Select a Minecraft version first",

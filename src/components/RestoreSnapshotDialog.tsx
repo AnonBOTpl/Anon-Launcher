@@ -116,7 +116,7 @@ export default function RestoreSnapshotDialog({
             size="sm"
             onClick={onConfirm}
             disabled={
-              loading || (mode === "full" && confirmText !== "przywróć")
+              loading || (mode === "full" && confirmText !== t("snapshots.restoreConfirmValue"))
             }
             className="text-xs"
           >

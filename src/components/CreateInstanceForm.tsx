@@ -133,11 +133,11 @@ function CreateInstanceForm() {
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      newErrors.name = "Nazwa instancji jest wymagana";
+      newErrors.name = t("create.errors.nameRequired");
     } else if (trimmedName.length > MAX_NAME_LENGTH) {
-      newErrors.name = `Nazwa może mieć maksymalnie ${MAX_NAME_LENGTH} znaków`;
+      newErrors.name = t("create.errors.nameMaxLength", { max: MAX_NAME_LENGTH });
     } else if (FORBIDDEN_CHARS.test(trimmedName)) {
-      newErrors.name = "Nazwa zawiera niedozwolone znaki (<>:\"/\\|?*)";
+      newErrors.name = t("create.errors.nameForbiddenChars");
     }
 
     if (!modpackSelection) {

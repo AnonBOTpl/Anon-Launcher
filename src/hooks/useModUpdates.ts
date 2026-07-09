@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { checkModUpdates } from "@/lib/mod-updater";
+import i18n from "@/lib/i18n";
 import type { ModUpdate } from "@/lib/mod-updater";
 import type { InstalledMod } from "@/lib/mod-installer";
 
@@ -67,7 +68,7 @@ export function useModUpdates({
         setError(
           err instanceof Error
             ? err.message
-            : "Nie udało się sprawdzić aktualizacji",
+            : i18n.t("mods.updateCheckFailed"),
         );
       }
     } finally {

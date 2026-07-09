@@ -99,17 +99,17 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
     });
 
     if (irisVersions.length === 0) {
-      throw new Error("Nie znaleziono wersji Iris dla Minecraft " + instanceMcVersion);
+      throw new Error(t("instance.iris.noVersionForMc", { mcVersion: instanceMcVersion }));
     }
 
     // Pick latest release version (array is non-empty at this point)
     const irisVersion = irisVersions.find((v) => v.version_type === "release") ?? irisVersions[0];
     if (!irisVersion) {
-      throw new Error("Nie znaleziono pasującej wersji Iris");
+      throw new Error(t("instance.iris.noMatchingVersion"));
     }
     const irisFile = irisVersion.files.find((f) => f.primary) ?? irisVersion.files[0];
     if (!irisFile) {
-      throw new Error("Nie znaleziono pliku do pobrania dla Iris");
+      throw new Error(t("instance.iris.noDownloadFile"));
     }
 
     await modApi.installMod(
@@ -257,7 +257,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
         return (
           <div className="rounded-2xl border border-border/50 bg-card/30 p-8 text-center backdrop-blur-sm">
             <p className="text-sm text-muted-foreground">
-              Ustawienia gry.
+              {t("instance.gameTabPlaceholder")}
             </p>
           </div>
         );

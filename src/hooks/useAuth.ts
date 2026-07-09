@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { completeMinecraftAuth } from "@/lib/auth";
 import { tryRefreshSession, clearAccountSession } from "@/lib/accounts";
+import i18n from "@/lib/i18n";
 import type {
   DeviceCodeResponse,
   TokenPollResult,
@@ -129,7 +130,7 @@ export function useAuth(): AuthState & {
           setFlowState((prev) => ({
             ...prev,
             step: "error",
-            error: result.error || "Wymiana kodu nie powiodła się",
+            error: result.error || i18n.t("accounts.errors.codeExchangeFailed"),
           }));
           return;
         }
@@ -140,7 +141,7 @@ export function useAuth(): AuthState & {
           2000
         );
       } catch (err) {
-        const message = typeof err === "string" ? err : err instanceof Error ? err.message : "Logowanie przez przeglądarkę nie powiodło się";
+        const message = typeof err === "string" ? err : err instanceof Error ? err.message : i18n.t("accounts.errors.loginFailed");
         console.error("Auth code callback poll error:", err);
         setFlowState((prev) => ({
           ...prev,
@@ -191,7 +192,7 @@ export function useAuth(): AuthState & {
       // Start polling for the callback
       pollAuthCodeCallback(result.port, result.codeVerifier);
     } catch (err) {
-      const message = typeof err === "string" ? err : err instanceof Error ? err.message : "Nie udało się rozpocząć logowania";
+      const message = typeof err === "string" ? err : err instanceof Error ? err.message : i18n.t("accounts.errors.startFailed");
       console.error("start_auth_code_flow error:", err);
       setFlowState((prev) => ({
         ...prev,

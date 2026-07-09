@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/lib/i18n";
 
 interface UseOpenFolderResult {
   openFolder: (instanceName: string) => Promise<void>;
@@ -19,7 +20,7 @@ export function useOpenFolder(): UseOpenFolderResult {
       await invoke("open_instance_folder", { instanceName });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Nie udało się otworzyć folderu";
+        err instanceof Error ? err.message : i18n.t("errors.folderOpenFailed");
       setError(message);
     } finally {
       setOpening(false);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { searchMods } from "@/lib/modrinth";
+import i18n from "@/lib/i18n";
 import type { ModrinthSearchHit, ModrinthSortIndex } from "@/types/modrinth";
 
 export interface ModSearchFilters {
@@ -108,7 +109,7 @@ export function useModSearch(initialFilters?: Partial<ModSearchFilters>) {
         });
       } catch (err) {
         if ((err as Error)?.name === "AbortError" || controller.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "Wystąpił nieznany błąd";
+        const message = err instanceof Error ? err.message : i18n.t("common.unknownError");
         setState((prev) => ({
           ...prev,
           loading: false,
