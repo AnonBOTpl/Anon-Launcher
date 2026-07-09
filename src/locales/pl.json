@@ -230,8 +230,6 @@
     "dark": "Ciemny",
     "light": "Jasny",
     "description": "Ustawienia języka i wyglądu AnonLauncher.",
-    "afterLaunch": "Po uruchomieniu gry",
-    "afterLaunchDesc": "Zamknij AnonLauncher automatycznie po starcie gry",
     "clientId": "Azure Client ID",
     "clientIdHint": "Wpisz własny Client ID aplikacji Azure do autoryzacji Microsoft"
   },
@@ -516,6 +514,20 @@
     "filtered": " (filtrowano: \"{{search}}\")",
     "fetchError": "Nie udało się załadować wersji. Sprawdź połączenie z internetem.",
     "failedToLoad": "Nie udało się załadować wersji"
+  },
+  "gameOverview": {
+    "screenshots": "Zrzuty ekranu",
+    "noScreenshotsYet": "Brak zrzutów ekranu",
+    "noScreenshotsHint": "Naciśnij F2 w grze, aby zrobić zrzut",
+    "openFolder": "Otwórz folder",
+    "statistics": "Statystyki",
+    "mods": "Mody",
+    "disabled": "wył.",
+    "java": "Java",
+    "custom": "Własna",
+    "runtime": "Runtime",
+    "diskUsage": "Rozmiar na dysku",
+    "justNow": "przed chwilą"
   },
   "loader": {
     "title": "Loader",

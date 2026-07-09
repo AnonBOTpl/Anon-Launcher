@@ -1473,7 +1473,6 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 
 #### ❌ Do zrobienia
 - [ ] **TASK-29** — Testy końcowe
-- [ ] **TASK-GRA** — Zakładka Gra w InstanceTabs (panel przeglądu instancji)
 
 #### ❌ Anulowane / Pominięte
 - ~~**TASK-UI-POLISH** — Custom scrollbary, titlebar~~
@@ -1517,6 +1516,32 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 
 **Znany problem — dev mode:**
 - W trybie `tauri dev` konsola pokazuje `Chrome_WidgetWin_0 Error 1412` przy zamykaniu — to błąd CEF/WebView2 spowodowany `process::exit(0)` przerywającym cleanup okna. Występuje TYLKO w dev mode (przy `close_app`). W release buildzie (`cargo tauri build`) aplikacja jest pojedynczym `.exe` — brak dev serwera, proces nie wisi. Do obserwacji na release.
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)
+
+## 2026-07-10 — Zakładka Gra (GameOverview) + bugfix process_manager + cleanup
+
+### 🔧 Zakładka Gra — GameOverview
+
+**Nowe pliki:**
+- `src-tauri/src/game_data.rs` — backend: odczyt screenshotów i rozmiaru instancji
+- `src/components/GameOverview.tsx` — widok zakładki Gra: screenshoty, statystyki (licznik modów, Java, rozmiar, loader)
+- `src/types/gameData.ts` — typy TypeScript
+
+**Zmodyfikowane:**
+- `src-tauri/src/lib.rs` — dodane komendy backendu (`get_recent_screenshots`, `get_instance_size`)
+- `src/components/InstanceTabs.tsx` — dodana zakładka "Gra" z GameOverview
+- `src/locales/en.json` + `src/locales/pl.json` — 18 kluczy `gameOverview.*`
+
+**Usunięte (na życzenie):** Sekcja "Ostatnia sesja" (serwer + świat), "Quick Links", komendy `get_last_server`/`get_last_world`/`open_instance_subfolder`
+
+### 🔧 Bugfix: timeout na tasklist w is_process_alive()
+- `process_manager.rs` — `is_process_alive()` zmieniona z `.output()` (blokującego bezterminowo) na `mpsc::channel` z `recv_timeout(3s)`. Zapobiega deadlockowi na zombie PID-zie.
+
+### 🧹 Usunięte (na życzenie)
+- `close_app` command, `open_instance_subfolder`, close-on-launch toggle, `afterLaunch` klucze locale
 
 ### Build
 - `tsc --noEmit` ✅ (0 błędów)

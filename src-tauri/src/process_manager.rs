@@ -256,19 +256,25 @@ impl ProcessManager {
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /// Check if a process with the given PID is still alive.
+/// Uses a timeout (3s) to prevent hanging if tasklist blocks on a zombie PID.
 fn is_process_alive(pid: u32) -> bool {
     #[cfg(target_os = "windows")]
     {
-        let output = std::process::Command::new("tasklist")
-            .args(&["/FI", &format!("PID eq {}", pid), "/NH"])
-            .output();
-        match output {
-            Ok(out) => {
-                let stdout = String::from_utf8_lossy(&out.stdout);
-                stdout.contains(&format!("{}", pid))
-            }
-            Err(_) => false,
-        }
+        use std::time::Duration;
+        let (tx, rx) = std::sync::mpsc::channel();
+        let pid_str = pid.to_string();
+
+        std::thread::spawn(move || {
+            let result = std::process::Command::new("tasklist")
+                .args(&["/FI", &format!("PID eq {pid_str}"), "/NH"])
+                .output()
+                .ok()
+                .map(|out| String::from_utf8_lossy(&out.stdout).contains(&pid_str))
+                .unwrap_or(false);
+            let _ = tx.send(result);
+        });
+
+        rx.recv_timeout(Duration::from_secs(3)).unwrap_or(false)
     }
 
     #[cfg(target_os = "macos")]

@@ -11,6 +11,7 @@ import ModList from "@/components/ModList";
 import ContentList from "@/components/ContentList";
 import SnapshotList from "@/components/SnapshotList";
 import { GameConsole } from "@/components/GameConsole";
+import GameOverview from "@/components/GameOverview";
 import * as modApi from "@/lib/mod-installer";
 import { getProject, getProjectVersions } from "@/lib/modrinth";
 
@@ -34,6 +35,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
   const activeTab = searchParams.get("tab") || "gra";
   const [instanceMcVersion, setInstanceMcVersion] = useState<string | undefined>(undefined);
   const [instanceLoader, setInstanceLoader] = useState<string | undefined>(undefined);
+  const [instanceManifest, setInstanceManifest] = useState<InstanceManifest | undefined>(undefined);
   const [irisInstalled, setIrisInstalled] = useState<boolean | undefined>(undefined);
   const [modUpdatesFound, setModUpdatesFound] = useState(false);
 
@@ -51,6 +53,7 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
         if (!cancelled) {
           setInstanceMcVersion(result.manifest.mcVersion);
           setInstanceLoader(result.manifest.loader);
+          setInstanceManifest(result.manifest);
         }
       })
       .catch(() => {
@@ -248,6 +251,22 @@ function InstanceTabs({ logs = [], onClearLogs, hasNewCrash, onDismissNewCrash, 
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 {t("instance.tabs.crash")}
+              </p>
+            )}
+          </div>
+        );
+
+      case "gra":
+        return (
+          <div className="rounded-2xl border border-border/50 bg-card/30 p-6 backdrop-blur-sm">
+            {instanceName ? (
+              <GameOverview
+                instanceName={instanceName}
+                manifest={instanceManifest ?? null}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t("instance.tabs.game")}
               </p>
             )}
           </div>

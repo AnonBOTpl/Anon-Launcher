@@ -230,8 +230,6 @@
     "dark": "Dark",
     "light": "Light",
     "description": "Language preferences for AnonLauncher.",
-    "afterLaunch": "After launching game",
-    "afterLaunchDesc": "Close AnonLauncher automatically after launching the game",
     "clientId": "Azure Client ID",
     "clientIdHint": "Enter your own Azure App Client ID for Microsoft authentication"
   },
@@ -516,6 +514,20 @@
     "filtered": " (filtered: \"{{search}}\")",
     "fetchError": "Failed to load versions. Check your internet connection.",
     "failedToLoad": "Failed to load versions"
+  },
+  "gameOverview": {
+    "screenshots": "Screenshots",
+    "noScreenshotsYet": "No screenshots yet",
+    "noScreenshotsHint": "Press F2 in-game to take a screenshot",
+    "openFolder": "Open folder",
+    "statistics": "Statistics",
+    "mods": "Mods",
+    "disabled": "disabled",
+    "java": "Java",
+    "custom": "Custom",
+    "runtime": "Runtime",
+    "diskUsage": "Disk usage",
+    "justNow": "just now"
   },
   "loader": {
     "title": "Loader",
