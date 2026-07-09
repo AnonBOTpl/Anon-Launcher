@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import type { ScreenshotInfo } from "@/types/gameData";
@@ -63,6 +63,56 @@ function SkeletonBlock({ className }: { className?: string }) {
   );
 }
 
+// ─── Screenshot Thumbnail (lazy loads via backend) ─────────────────
+
+function ScreenshotThumbnail({ path, alt }: { path: string; alt: string }) {
+  const [dataUri, setDataUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    invoke<string>("read_screenshot", { filePath: path })
+      .then((result) => {
+        if (!cancelled) setDataUri(result);
+      })
+      .catch(() => {
+        if (!cancelled) setDataUri(null);
+      });
+    return () => { cancelled = true; };
+  }, [path]);
+
+  if (!dataUri) {
+    return (
+      <div className="flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-purple-400/50"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={dataUri}
+      alt={alt}
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+      loading="lazy"
+    />
+  );
+}
+
 // ─── Props ──────────────────────────────────────────────────────────
 
 interface GameOverviewProps {
@@ -82,6 +132,14 @@ function GameOverview({ instanceName, manifest }: GameOverviewProps) {
 
   // Hooks
   const { mods, loading: modsLoading } = useMods(instanceName);
+
+  // Open instance subfolder (screenshots, saves, etc.)
+  const openSubfolder = useCallback((subfolder: string) => {
+    invoke("open_instance_subfolder", {
+      instanceName,
+      subfolder,
+    }).catch(() => {});
+  }, [instanceName]);
 
   // Fetch game data
   useEffect(() => {
@@ -136,24 +194,9 @@ function GameOverview({ instanceName, manifest }: GameOverviewProps) {
                 key={shot.filename}
                 className="group relative flex-1 min-w-[160px] max-w-[220px] overflow-hidden rounded-xl border border-border/50 bg-gradient-to-b from-muted/30 to-muted/10 p-3 backdrop-blur-sm transition-all duration-300 hover:border-purple-500/20 hover:shadow-md hover:shadow-purple-500/5"
               >
-                {/* Thumbnail placeholder */}
-                <div className="mb-2 flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-purple-400/50"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
+                {/* Screenshot thumbnail */}
+                <div className="mb-2 aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5">
+                  <ScreenshotThumbnail path={shot.path} alt={shot.filename} />
                 </div>
 
                 {/* Filename */}
@@ -297,6 +340,59 @@ function GameOverview({ instanceName, manifest }: GameOverviewProps) {
 
       {/* ── Divider ── */}
       <div className="border-t border-border/30" />
+
+      {/* ── Quick Links Section ── */}
+      <div>
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+          {t("gameOverview.quickLinks")}
+        </h3>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => openSubfolder("screenshots")}
+            className="inline-flex items-center gap-2 rounded-xl border border-border/40 bg-card/20 px-4 py-2.5 text-sm font-medium text-foreground/80 backdrop-blur-sm transition-all duration-300 hover:border-purple-500/20 hover:bg-purple-500/5 hover:text-purple-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            {t("gameOverview.screenshotsFolder")}
+          </button>
+
+          <button
+            onClick={() => openSubfolder("saves")}
+            className="inline-flex items-center gap-2 rounded-xl border border-border/40 bg-card/20 px-4 py-2.5 text-sm font-medium text-foreground/80 backdrop-blur-sm transition-all duration-300 hover:border-purple-500/20 hover:bg-purple-500/5 hover:text-purple-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            {t("gameOverview.savesFolder")}
+          </button>
+        </div>
+      </div>
 
     </div>
   );

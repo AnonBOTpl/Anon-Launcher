@@ -1,3 +1,4 @@
+use base64::Engine;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -12,6 +13,7 @@ pub struct ScreenshotInfo {
     pub filename: String,
     pub last_modified: String,
     pub file_size: u64,
+    pub path: String,
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -114,6 +116,7 @@ pub fn get_recent_screenshots(
                 filename,
                 last_modified,
                 file_size: metadata.len(),
+                path: path.to_string_lossy().to_string(),
             });
         }
     }
@@ -123,6 +126,35 @@ pub fn get_recent_screenshots(
     screenshots.truncate(3);
 
     Ok(screenshots)
+}
+
+/// Read an image file and return it as a base64 data URI.
+pub fn read_image_as_base64(path: &str) -> Result<String, String> {
+    let file_path = Path::new(path);
+    if !file_path.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+
+    let bytes = fs::read(file_path).map_err(|e| format!("Failed to read file: {}", e))?;
+
+    // Detect MIME type from extension
+    let mime = match file_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase()
+        .as_str()
+    {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "bmp" => "image/bmp",
+        _ => "image/png",
+    };
+
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    Ok(format!("data:{};base64,{}", mime, b64))
 }
 
 /// Compute the total size of the instance directory (excluding snapshots/).

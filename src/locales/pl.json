@@ -527,7 +527,10 @@
     "custom": "Własna",
     "runtime": "Runtime",
     "diskUsage": "Rozmiar na dysku",
-    "justNow": "przed chwilą"
+    "justNow": "przed chwilą",
+    "quickLinks": "Skróty",
+    "screenshotsFolder": "Zrzuty ekranu",
+    "savesFolder": "Zapisy"
   },
   "loader": {
     "title": "Loader",

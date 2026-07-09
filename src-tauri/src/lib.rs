@@ -111,6 +111,48 @@ fn resolve_mod_dependencies(
 }
 
 #[tauri::command]
+fn open_instance_subfolder(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    instance_name: String,
+    subfolder: String,
+) -> Result<(), String> {
+    let app_data_dir = get_app_data_dir(&app_handle, &state)?;
+    let instances_dir = app_data_dir.join("instances");
+    let target_dir = instances_dir
+        .join(sanitize_name(&instance_name))
+        .join(&subfolder);
+
+    // Create the subfolder if it doesn't exist (e.g. screenshots/ before first screenshot)
+    if !target_dir.exists() {
+        std::fs::create_dir_all(&target_dir)
+            .map_err(|e| format!("Failed to create folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    let cmd = "explorer";
+    #[cfg(target_os = "windows")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    #[cfg(target_os = "macos")]
+    let cmd = "open";
+    #[cfg(target_os = "macos")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    #[cfg(target_os = "linux")]
+    let cmd = "xdg-open";
+    #[cfg(target_os = "linux")]
+    let args = [target_dir.to_string_lossy().to_string()];
+
+    std::process::Command::new(cmd)
+        .arg(&args[0])
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 fn open_instance_folder(
     app_handle: AppHandle,
     state: State<'_, AppState>,
@@ -817,6 +859,11 @@ fn get_recent_screenshots(
 }
 
 #[tauri::command]
+fn read_screenshot(file_path: String) -> Result<String, String> {
+    game_data::read_image_as_base64(&file_path)
+}
+
+#[tauri::command]
 fn get_instance_size(
     app_handle: AppHandle,
     state: State<'_, AppState>,
@@ -892,6 +939,7 @@ pub fn run() {
             validate_import_zip,
             import_instance,
             open_instance_folder,
+            open_instance_subfolder,
             start_device_code_flow,
             poll_for_token,
             complete_minecraft_auth,
@@ -930,6 +978,7 @@ pub fn run() {
             delete_all_crash_reports,
             get_recent_screenshots,
             get_instance_size,
+            read_screenshot,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

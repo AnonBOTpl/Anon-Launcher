@@ -289,7 +289,8 @@ function InstanceView() {
   // Open console in a separate Tauri window
   const openConsoleWindow = useCallback(async () => {
     const name = instanceName ?? "unknown";
-    const label = "console-" + name;
+    // Sanitize label — Tauri window labels only allow [a-zA-Z0-9._-]
+    const label = "console-" + name.replace(/[^a-zA-Z0-9._-]/g, "_");
     try {
       const existing = await WebviewWindow.getByLabel(label);
       if (existing) {

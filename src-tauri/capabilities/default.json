@@ -11,6 +11,14 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "fs:default",
-    "stronghold:default"
+    "stronghold:default",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/**" }]
+    }
   ]
 }

@@ -527,7 +527,10 @@
     "custom": "Custom",
     "runtime": "Runtime",
     "diskUsage": "Disk usage",
-    "justNow": "just now"
+    "justNow": "just now",
+    "quickLinks": "Quick Links",
+    "screenshotsFolder": "Screenshots",
+    "savesFolder": "Saves"
   },
   "loader": {
     "title": "Loader",
