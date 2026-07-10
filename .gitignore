@@ -36,6 +36,7 @@ src-tauri/gen/
 # Logs
 logs/
 *.log
+DEVELOPMENT_LOG.md
 
 # Project notes
 kontynuacja.md

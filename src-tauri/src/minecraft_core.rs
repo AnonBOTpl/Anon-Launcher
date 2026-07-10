@@ -251,6 +251,7 @@ impl MinecraftCore {
         }
 
         // Download assets in parallel using threads (8 concurrent)
+        // with progress reporting every 200ms
         let chunk_size = (need_to_download + 7) / 8; // ceil division, 8 threads
         let completed = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(already_have as u64));
         let total = total_assets;
@@ -259,6 +260,27 @@ impl MinecraftCore {
         let chunks: Vec<Vec<String>> = to_download.chunks(chunk_size).map(|c| c.to_vec()).collect();
 
         std::thread::scope(|scope| {
+            // ── Progress reporter thread ────────────────────────────
+            // Polls the counter every 200ms and emits events so the frontend
+            // shows a live progress bar instead of jumping 0→100%.
+            let progress = completed.clone();
+            let reporter = scope.spawn(move || {
+                loop {
+                    let done = progress.load(std::sync::atomic::Ordering::Relaxed);
+                    let _ = app_handle.emit("download:progress", DownloadProgressEvent {
+                        phase: "assets".to_string(),
+                        current: done as usize,
+                        total,
+                        status: format!("Pobieranie assetów ({}/{})...", done, total),
+                    });
+                    if done >= total as u64 {
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                }
+            });
+
+            // ── Worker threads ─────────────────────────────────────
             for chunk in &chunks {
                 let chunk = chunk.clone();
                 let objects_dir = objects_dir.clone();
@@ -293,18 +315,21 @@ impl MinecraftCore {
                     }
                 });
             }
+
+            // Wait for reporter to finish (it exits when done >= total)
+            let _ = reporter.join();
         });
 
-        let final_count = completed.load(std::sync::atomic::Ordering::Relaxed);
-
+        // Final emission — but the reporter likely already emitted 100%.
+        // Just in case, send one more to be sure.
         self.emit_progress(app_handle, DownloadProgressEvent {
             phase: "assets".to_string(),
             current: total,
             total,
-            status: format!("Pobieranie assetów — gotowe ({} assetów)", final_count),
+            status: format!("Pobieranie assetów — gotowe ({} assetów)", total),
         });
 
-        Ok(final_count)
+        Ok(total as u64)
     }
 
     // ── Launch ─────────────────────────────────────────────────────

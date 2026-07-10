@@ -1546,3 +1546,62 @@ Zablokowane: Edytuj/Klonuj/Eksportuj/Usuń (HeroCard), Edytuj/Usuń (InstanceCar
 ### Build
 - `tsc --noEmit` ✅ (0 błędów)
 - `cargo check` ✅ (0 błędów)
+
+## 2026-07-10 (sesja 2) — Fix: screenshot thumbnails (base64) + Quick Links + console window
+
+### 🔧 Screenshot thumbnails — base64 data URI
+- `game_data.rs` — dodana funkcja `read_image_as_base64()` (odczyt PNG → data URI)
+- `lib.rs` — nowa komenda `read_screenshot`
+- `GameOverview.tsx` — komponent `ScreenshotThumbnail` z `invoke("read_screenshot")` zamiast `convertFileSrc`
+- Usunięto `assetProtocol.scope` z `tauri.conf.json`
+
+### 🔧 Console window label sanitization
+- `InstanceView.tsx` — sanityzacja labela: `name.replace(/[^a-zA-Z0-9._-]/g, '_')`
+
+### 🔧 Quick Links przywrócone
+- Przyciski "Zrzuty ekranu" i "Zapisy" w zakładce Gra
+- `lib.rs` — nowa komenda `open_instance_subfolder`
+- Klucze locale: `quickLinks`, `screenshotsFolder`, `savesFolder`
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)
+
+## 2026-07-10 (sesja 3) — NSIS installer + GitHub Releases + repo publiczne
+
+### 🔧 NSIS installer
+- `targets: "nsis"` zamiast MSI w `tauri.conf.json`
+- Grafiki: `header.bmp` (150x57) + `sidebar.bmp` (164x314) w `src-tauri/installer/`
+- `LICENSE.rtf` — MIT + link do GitHub
+- `installMode: currentUser`, `startMenuFolder: "AnonLauncher"`
+- Repo zmienione na publiczne przez `gh repo edit`
+
+### 🔧 GitHub Releases
+- `v0.1.0` — pierwszy build NSIS
+- `v0.1.1` — fix progresu assetów
+
+### Build testowy (release)
+- `cargo tauri build` ✅ — NSIS .exe działa poza konsolą dev
+
+## 2026-07-10 (sesja 4) — Fix: asset download progress + v0.1.1
+
+### 🔥 Fix: pasek postępu assetów wisiał na 0
+
+**Przyczyna:** W `minecraft_core.rs` `download_assets()` pobiera assety równolegle (8 wątków) bez emisji progresu.
+
+**Fix:** Wątek reportera wewnątrz `std::thread::scope` polluje `AtomicU64` co 200ms i emituje `download:progress` z `phase: "assets"`.
+
+### Build
+- `tsc --noEmit` ✅ (0 błędów)
+- `cargo check` ✅ (0 błędów)
+- `cargo tauri build` ✅ (NSIS v0.1.1)
+
+## 2026-07-10 — Porządki w repo + nowe README
+
+### 🧹 Czyszczenie
+- Usunięto `Fabulously.Optimized-v8.2.0.mrpack` z repozytorium
+
+### 📝 Dokumentacja
+- `README.md` — przepisany na angielski + link do polskiej wersji
+- `README-pl.md` — nowy plik, polska wersja README
+
