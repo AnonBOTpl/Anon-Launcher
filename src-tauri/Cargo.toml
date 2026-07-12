@@ -1,6 +1,6 @@
 [package]
 name = "anon-launcher"
-version = "0.1.6"
+version = "0.1.7"
 description = "Uniwersalny Launcher Minecraft"
 authors = ["AnonLauncher"]
 edition = "2021"

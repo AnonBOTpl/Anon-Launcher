@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.1.7 (2026-07-13)
+
+### 🎨 Nowe — Ikony Minecraft dla instancji
+
+- **Minecraft item icons:** Każda instancja ma unikalną ikonkę (diament, miecz, kilof itd.) zamiast literki w kółku
+- **IconPicker:** Przy tworzeniu i edycji instancji można wybrać ikonkę z 16 Minecraft itemków (SVG)
+- **Modrinth icons:** Import z Modrinth automatycznie pobiera `icon_url` projektu jako ikonę instancji
+- **Hash fallback:** Jeśli nie wybrano ikony, dobierana jest losowo z nazwy instancji (deterministyczny hash)
+- **Biblioteka:** `minecraft-items-react` — czyste SVG, tree-shaking, zero flicker dzięki statycznym importom
+
+### 🔍 Nowe — Wyszukiwarka instancji + sortowanie
+
+- **Search bar:** Pole wyszukiwania na dashboardzie z ikonką lupy i przyciskiem clear — filtruje instancje po nazwie w czasie rzeczywistym
+- **Sortowanie po częstotliwości:** Instancje sortowane malejąco według `launchCount` (najczęściej grane na górze)
+- **Schema v3:** Nowe pole `launchCount` w manifestach (0 dla nowych/klonowanych, inkrementowane przy każdym uruchomieniu)
+- **Migracja:** Istniejące instancje dostają `launchCount: 0` automatycznie
+
+### 🐛 Bug Fixes
+
+- **Podwójne kliknięcie Launch:** Przycisk jest blokowany przez cały czas pobierania assetów — `launching` state z `finally` cleanup
+- **Migotanie ikony:** Zamiana `lazy()` + `Suspense` na statyczne importy SVG — zero flicker podczas re-renderów
+- **Nawigacja podczas downloadu:** Po powrocie z Settings podczas pobierania assetów, `download:progress` automatycznie blokuje przycisk Launch
+- **Autoscroll w konsoli:** Używa raw `logs.length` zamiast `filteredLogs.length` — zmiana filtrów nie triggeruje fałszywego scrolla
+- **Kategorie logów:** NeoForge i Vanilla nie wyświetlają się już w zakładce "Fabric" (poprawione wzorce detekcji)
+
+### 🎨 UI Improvements
+
+- **Konsola:** Zmiana nazwy zakładki "Logi" → "Konsola" (PL) / "Console" (EN)
+- **Filtr Loader w konsoli:** Zakładka "Fabric" → "Loader" — obsługuje też NeoForge
+- **Custom scrollbar w EditInstanceDialog:** Cienki, akcentowany scrollbar zgodny z motywem
+
+---
+
 ## v0.1.6 (2026-07-12)
 
 ### 🚀 New — SettingsPage (Full-Screen Settings)

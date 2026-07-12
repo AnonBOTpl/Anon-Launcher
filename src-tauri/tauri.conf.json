@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicoverbruggen/tauri-v2-schema/refs/heads/main/schema.json",
   "productName": "AnonLauncher",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "identifier": "com.anonlauncher.app",
   "build": {
     "frontendDist": "../dist",

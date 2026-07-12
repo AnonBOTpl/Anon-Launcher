@@ -509,14 +509,21 @@ fn launch_instance(
     let instances_dir = app_data_dir.join("instances");
     let game_dir = instances_dir.join(sanitize::sanitize_name(&instance_name));
 
-    let manager = state.process_manager.lock().map_err(|e| format!("Lock error: {}", e))?;
-    manager.launch(
-        &app_handle,
-        &instance_name,
-        &java_path,
-        args,
-        &game_dir.to_string_lossy(),
-    )
+    let result = {
+        let manager = state.process_manager.lock().map_err(|e| format!("Lock error: {}", e))?;
+        manager.launch(
+            &app_handle,
+            &instance_name,
+            &java_path,
+            args,
+            &game_dir.to_string_lossy(),
+        )
+    }?;
+
+    // Increment launch count after successful launch
+    let _ = instance_manager::increment_launch_count(&app_data_dir, &instance_name);
+
+    Ok(result)
 }
 
 #[tauri::command]

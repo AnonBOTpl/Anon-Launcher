@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 /** Log category for tab filtering */
-export type LogCategory = "all" | "fabric" | "engine";
+export type LogCategory = "all" | "loader" | "engine";
 
 /** Log level for filtering */
 export type LogLevel = "all" | "info" | "warn" | "error" | "debug";
@@ -43,17 +43,17 @@ interface UseLaunchReturn {
 
 // ─── Helper: detect log category & level ────────────────────────────
 
-const FABRIC_PATTERNS = [
-  /^\[.*?\]\s+\[main\//,          // [thread] [main/INFO]
-  /fabric/i,
-  /loader/i,
-  /mixin/i,
-  /knot/i,
-  /spongepowered/i,
-  /fabricloader/i,
+const LOADER_PATTERNS = [
+  /fabric(loader)?/i,           // Fabric or FabricLoader
+  /knot/i,                       // Fabric's custom classloader
+  /spongepowered/i,              // Mixin framework
+  /mixin/i,                      // Mixin debug/error messages
+  /neoforge/i,                   // NeoForge
+  /neoforged/i,                  // NeoForged (Oculus/Embeddium)
 ];
 
 const ENGINE_THREAD_PATTERNS = [
+  /^\[.*?\]\s+\[main\//,          // [thread] [main/INFO] — generic Minecraft main thread
   /^\[.*?\]\s+\[Render thread\//,
   /^\[.*?\]\s+\[Server thread\//,
   /^\[.*?\]\s+\[Sound engine\//,
@@ -64,7 +64,7 @@ const ENGINE_THREAD_PATTERNS = [
 
 function detectCategory(text: string): LogCategory {
   if (ENGINE_THREAD_PATTERNS.some((p) => p.test(text))) return "engine";
-  if (FABRIC_PATTERNS.some((p) => p.test(text))) return "fabric";
+  if (LOADER_PATTERNS.some((p) => p.test(text))) return "loader";
   return "engine";
 }
 

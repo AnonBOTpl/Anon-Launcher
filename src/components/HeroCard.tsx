@@ -10,6 +10,7 @@ import DeleteInstanceDialog from "@/components/DeleteInstanceDialog";
 import CloneInstanceDialog from "@/components/CloneInstanceDialog";
 import ExportInstanceDialog from "@/components/ExportInstanceDialog";
 import OpenFolderButton from "@/components/OpenFolderButton";
+import InstanceIcon from "@/components/InstanceIcon";
 
 interface HeroCardProps {
   instance: InstanceManifest;
@@ -73,8 +74,8 @@ function HeroCard({ instance, launchStatus, onLaunch, onStop, canLaunch, onUpdat
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4 min-w-0">
               {/* Icon */}
-              <div className="flex h-14 w-14 shrink-0 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-xl md:text-2xl font-bold text-primary shadow-lg shadow-primary/10">
-                {instance.name.charAt(0).toUpperCase()}
+              <div className="flex h-14 w-14 shrink-0 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg shadow-primary/10">
+                <InstanceIcon instance={instance} size={32} />
               </div>
 
               {/* Info */}

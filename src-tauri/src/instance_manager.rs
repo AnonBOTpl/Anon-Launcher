@@ -38,6 +38,8 @@ pub fn create_instance(app_data_dir: &Path, input: CreateInstanceInput) -> Resul
         custom_java_path: input.custom_java_path,
         ram: input.ram,
         jvm_args: input.jvm_args,
+        icon: input.icon,
+        launch_count: None,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -197,6 +199,8 @@ pub fn clone_instance(
         custom_java_path: source_manifest.manifest.custom_java_path.clone(),
         ram: source_manifest.manifest.ram,
         jvm_args: source_manifest.manifest.jvm_args.clone(),
+        icon: source_manifest.manifest.icon.clone(),
+        launch_count: None, // Cloned instances start with 0 launches
         created_at: now.clone(),
         updated_at: now,
     };
@@ -256,24 +260,27 @@ pub fn update_instance(
 
     manifest_migration::validate_manifest(&new_manifest)?;
 
-    // Read existing manifest to preserve createdAt
+    // Read existing manifest to preserve createdAt and launchCount
     let existing_manifest_path = old_dir.join("instance.json");
-    let existing_created_at = if existing_manifest_path.exists() {
-        if let Ok(content) = fs::read_to_string(&existing_manifest_path) {
-            if let Ok(data) = serde_json::from_str::<Value>(&content) {
-                data.get("createdAt")
-                    .or_else(|| data.get("created_at"))
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string())
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    let existing_raw_manifest = if existing_manifest_path.exists() {
+        fs::read_to_string(&existing_manifest_path).ok()
+            .and_then(|c| serde_json::from_str::<Value>(&c).ok())
     } else {
         None
     };
+
+    let existing_created_at = existing_raw_manifest.as_ref().and_then(|data| {
+        data.get("createdAt")
+            .or_else(|| data.get("created_at"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+    });
+
+    let existing_launch_count = existing_raw_manifest.as_ref().and_then(|data| {
+        data.get("launchCount")
+            .or_else(|| data.get("launch_count"))
+            .and_then(|v| v.as_u64())
+    });
 
     let now = chrono_now();
 
@@ -287,6 +294,8 @@ pub fn update_instance(
         custom_java_path: new_manifest.custom_java_path,
         ram: new_manifest.ram,
         jvm_args: new_manifest.jvm_args,
+        icon: new_manifest.icon,
+        launch_count: existing_launch_count,
         created_at: existing_created_at.unwrap_or_else(|| now.clone()),
         updated_at: now,
     };
@@ -332,6 +341,24 @@ pub fn write_manifest_to_disk(instance_dir: &Path, manifest: &InstanceManifest) 
         code: ManifestErrorCode::ParseError,
         message: format!("Failed to write manifest file: {}", e),
     })?;
+
+    Ok(())
+}
+
+/// Increment the launch count for an instance.
+/// Reads the current manifest, increments launch_count by 1, and writes it back.
+pub fn increment_launch_count(app_data_dir: &Path, instance_name: &str) -> Result<(), ManifestError> {
+    let read_result = read_manifest(app_data_dir, instance_name)?;
+    let manifest = read_result.manifest;
+
+    let new_manifest = InstanceManifest {
+        launch_count: Some(manifest.launch_count.unwrap_or(0) + 1),
+        ..manifest
+    };
+
+    let instance_dir = get_instances_dir(app_data_dir)
+        .join(sanitize_name(instance_name));
+    write_manifest_to_disk(&instance_dir, &new_manifest)?;
 
     Ok(())
 }

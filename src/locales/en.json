@@ -8,7 +8,12 @@
     "refresh": "Refresh",
     "noInstances": "No instances yet",
     "noInstancesHint": "Create your first instance to get started",
-    "loading": "Loading instances..."
+    "loading": "Loading instances...",
+    "searchPlaceholder": "Search instances...",
+    "filteredCount": "{{count}}/{{total}} results",
+    "sortedByLaunches": "Sorted by launch frequency",
+    "noSearchResults": "No instances match your search",
+    "clearSearch": "Clear search"
   },
   "instance": {
     "launch": "Launch",
@@ -34,7 +39,7 @@
       "resourcepacks": "Resource Packs",
       "shaders": "Shaders",
       "snapshots": "Snapshots",
-      "logs": "Logs",
+      "logs": "Console",
       "crash": "Crash"
     },
     "notFound": "Instance not found",
@@ -248,7 +253,7 @@
     "manual": "Manual",
     "newLogs": "New logs — click to scroll",
     "filterAll": "All",
-    "filterFabric": "Fabric",
+    "filterLoader": "Loader",
     "filterEngine": "Engine",
     "search": "Search...",
     "gameExited": "--- Game exited (code: {{code}}) ---",

@@ -57,10 +57,10 @@ pub fn migrate_manifest(data: Value) -> Result<(InstanceManifest, bool), Manifes
 }
 
 /// Apply a single migration step from version N to N+1
-fn apply_migration(from_version: u32, _data: Value) -> Result<Value, ManifestError> {
+fn apply_migration(from_version: u32, data: Value) -> Result<Value, ManifestError> {
     match from_version {
-        // Future migrations go here:
-        // 1 => migrate_v1_to_v2(data),
+        1 => migrate_v1_to_v2(data),
+        2 => migrate_v2_to_v3(data),
         _ => Err(ManifestError {
             code: ManifestErrorCode::MigrationFailed,
             message: format!(
@@ -70,6 +70,32 @@ fn apply_migration(from_version: u32, _data: Value) -> Result<Value, ManifestErr
             ),
         }),
     }
+}
+
+/// Migrate from v2 to v3: add `launchCount` field (0 by default)
+fn migrate_v2_to_v3(mut data: Value) -> Result<Value, ManifestError> {
+    // Add launchCount field if missing
+    if data.get("launchCount").is_none() {
+        data["launchCount"] = serde_json::json!(0);
+    }
+
+    // Update schema version
+    data["schemaVersion"] = serde_json::json!(3);
+
+    Ok(data)
+}
+
+/// Migrate from v1 to v2: add `icon` field (null by default)
+fn migrate_v1_to_v2(mut data: Value) -> Result<Value, ManifestError> {
+    // Add icon field if missing
+    if data.get("icon").is_none() && data.get("iconUrl").is_none() {
+        data["icon"] = Value::Null;
+    }
+
+    // Update schema version
+    data["schemaVersion"] = serde_json::json!(2);
+
+    Ok(data)
 }
 
 /// Validate that a manifest has all required fields

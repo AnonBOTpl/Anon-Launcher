@@ -7,6 +7,7 @@ import type { InstanceManifest, LoaderType } from "@/types/instance";
 import { cn } from "@/lib/utils";
 import DeleteInstanceDialog from "@/components/DeleteInstanceDialog";
 import EditInstanceDialog from "@/components/EditInstanceDialog";
+import InstanceIcon from "@/components/InstanceIcon";
 
 type LaunchStatus =
   | { type: "idle" }
@@ -104,8 +105,8 @@ function InstanceCard({ instance, onDeleted }: InstanceCardProps) {
 
         {/* Top row: icon + actions */}
         <div className="flex items-start justify-between">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-sm font-bold text-muted-foreground">
-            {instance.name.charAt(0).toUpperCase()}
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 ring-1 ring-primary/10">
+            <InstanceIcon instance={instance} size={22} />
           </div>
 
           <div className="flex items-center gap-1">

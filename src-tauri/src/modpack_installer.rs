@@ -21,6 +21,8 @@ pub struct CreateFromModpackInput {
     pub java_version: String,
     pub custom_java_path: Option<String>,
     pub jvm_args: Option<String>,
+    /// Instance icon identifier (e.g. "url:https://...")
+    pub icon: Option<String>,
 }
 
 /// Structure of modrinth.index.json inside a .mrpack
@@ -391,6 +393,8 @@ fn create_from_modpack_inner(
         custom_java_path: input.custom_java_path.clone(),
         ram: input.ram,
         jvm_args: input.jvm_args.clone(),
+        icon: input.icon.clone(),
+        launch_count: None,
     };
 
     // Create the instance

@@ -48,12 +48,12 @@ function isScrolledToBottom(el: HTMLElement, threshold = 30): boolean {
 /**
  * Game console component styled to match the app's purple/slate theme.
  * Displays Minecraft stdout/stderr logs with auto-scroll,
- * categorized tabs (All / Fabric / Engine), level filtering,
+ * categorized tabs (All / Loader / Engine), level filtering,
  * and text search.
  */
 const TABS_KEYS: { key: LogCategory; labelKey: string }[] = [
   { key: "all", labelKey: "console.filterAll" },
-  { key: "fabric", labelKey: "console.filterFabric" },
+  { key: "loader", labelKey: "console.filterLoader" },
   { key: "engine", labelKey: "console.filterEngine" },
 ];
 
@@ -65,8 +65,6 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
   const [activeTab, setActiveTab] = useState<LogCategory>("all");
   const [levelFilter, setLevelFilter] = useState<LogLevel>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [hasNewLogs, setHasNewLogs] = useState(false);
-
   // Filter logs based on active tab, level filter and search
   const filteredLogs = useMemo(() => {
     return logs.filter((line) => {
@@ -87,26 +85,30 @@ export function GameConsole({ logs, onClear, maxHeight = "300px" }: GameConsoleP
     setAutoScroll(atBottom);
   }, []);
 
-  // Auto-scroll when new logs arrive, but only if user is at the bottom
-  const prevLogsLength = useRef(filteredLogs.length);
-  useEffect(() => {
-    if (filteredLogs.length > prevLogsLength.current) {
-      setHasNewLogs(true);
-      prevLogsLength.current = filteredLogs.length;
-    }
-  }, [filteredLogs.length]);
+  // Track raw (unfiltered) log length to detect new log arrivals
+  // Using unfiltered logs avoids false triggers from filter changes
+  const rawLogsLengthRef = useRef(logs.length);
 
+  // Auto-scroll when new raw logs arrive and auto-scroll is enabled
   useEffect(() => {
-    if (autoScroll && scrollRef.current && hasNewLogs) {
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        if (scrollRef.current && autoScroll) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-      setHasNewLogs(false);
-    }
-  }, [filteredLogs, autoScroll, hasNewLogs]);
+    if (!autoScroll || !scrollRef.current) return;
+    if (logs.length <= rawLogsLengthRef.current) return;
+
+    // New logs arrived — update ref and scroll to bottom
+    rawLogsLengthRef.current = logs.length;
+
+    requestAnimationFrame(() => {
+      if (scrollRef.current && autoScroll) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+  }, [logs.length, autoScroll]);
+
+  // Always keep rawLogsLengthRef in sync (even when auto-scroll is off)
+  // so that when user re-enables auto-scroll, the next log triggers scroll
+  useEffect(() => {
+    rawLogsLengthRef.current = logs.length;
+  }, [logs.length]);
 
   // Keyboard shortcut: Ctrl+F to focus search
   useEffect(() => {

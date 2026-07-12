@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Current schema version for instance manifests
-pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+pub const CURRENT_SCHEMA_VERSION: u32 = 3;
 
 /// Supported Minecraft loaders
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -60,6 +60,12 @@ pub struct InstanceManifest {
     /// JVM arguments (optional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jvm_args: Option<String>,
+    /// Instance icon — "item:diamond" for built-in items, "url:https://..." for custom images
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    /// Number of times this instance has been launched
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub launch_count: Option<u64>,
     /// ISO date of creation
     pub created_at: String,
     /// ISO date of last update
@@ -78,6 +84,11 @@ pub struct CreateInstanceInput {
     pub custom_java_path: Option<String>,
     pub ram: u64,
     pub jvm_args: Option<String>,
+    /// Instance icon identifier
+    pub icon: Option<String>,
+    /// Initial launch count (defaults to 0)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub launch_count: Option<u64>,
 }
 
 /// Result of a manifest read operation

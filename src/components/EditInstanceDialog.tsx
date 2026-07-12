@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import VersionSelect from "@/components/VersionSelect";
 import LoaderSelect from "@/components/LoaderSelect";
+import IconPicker from "@/components/IconPicker";
+import InstanceIcon from "@/components/InstanceIcon";
 import { getJavaVersionForMc } from "@/lib/java";
 
 interface EditInstanceDialogProps {
@@ -57,6 +59,7 @@ function EditInstanceDialog({
   const [javaVersion, setJavaVersion] = useState("21");
   const [ram, setRam] = useState(4096);
   const [jvmArgs, setJvmArgs] = useState("");
+  const [icon, setIcon] = useState("");
 
   // Java recommendation based on MC version
   const recommendedJava = mcVersion ? getJavaVersionForMc(mcVersion) : null;
@@ -94,6 +97,7 @@ function EditInstanceDialog({
         setJavaVersion(m.javaVersion);
         setRam(m.ram);
         setJvmArgs(m.jvmArgs ?? "");
+        setIcon(m.icon ?? "");
         // Don't auto-override saved Java version on dialog open
         setJavaAutoSet(false);
         setLoading(false);
@@ -148,7 +152,7 @@ function EditInstanceDialog({
       await invoke("update_instance", {
         oldName: instanceName,
         newManifest: {
-          schemaVersion: 1,
+          schemaVersion: 3,
           name: name.trim(),
           mcVersion,
           loader,
@@ -156,6 +160,7 @@ function EditInstanceDialog({
           javaVersion,
           ram,
           jvmArgs: jvmArgs.trim() || null,
+          icon: icon || null,
           createdAt: "", // backend sets this
           updatedAt: "", // backend sets this
         },
@@ -174,7 +179,7 @@ function EditInstanceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle>{t("edit.title")}</DialogTitle>
           <DialogDescription>
@@ -301,6 +306,19 @@ function EditInstanceDialog({
                   {javaMismatch}
                 </p>
               )}
+            </div>
+
+            {/* Icon picker */}
+            <div className="space-y-2">
+              <Label>{t("create.icon") ?? "Icon"}</Label>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 ring-1 ring-primary/10">
+                  <InstanceIcon instance={{ name, icon }} size={22} />
+                </div>
+                <div className="flex-1">
+                  <IconPicker value={icon} onChange={setIcon} showRandom />
+                </div>
+              </div>
             </div>
 
             {/* JVM Arguments */}

@@ -8,7 +8,12 @@
     "refresh": "Odśwież",
     "noInstances": "Brak instancji",
     "noInstancesHint": "Utwórz pierwszą instancję aby zacząć",
-    "loading": "Ładowanie instancji..."
+    "loading": "Ładowanie instancji...",
+    "searchPlaceholder": "Szukaj instancji...",
+    "filteredCount": "{{count}}/{{total}} wyników",
+    "sortedByLaunches": "Sortowane według częstotliwości uruchamiania",
+    "noSearchResults": "Brak instancji pasujących do wyszukiwania",
+    "clearSearch": "Wyczyść wyszukiwanie"
   },
   "instance": {
     "launch": "Uruchom",
@@ -34,7 +39,7 @@
       "resourcepacks": "Paczki zasobów",
       "shaders": "Shadery",
       "snapshots": "Snapshoty",
-      "logs": "Logi",
+      "logs": "Konsola",
       "crash": "Crash"
     },
     "notFound": "Instancja nie znaleziona",
@@ -248,7 +253,7 @@
     "manual": "Ręczny",
     "newLogs": "Nowe logi — kliknij, aby przewinąć",
     "filterAll": "Wszystkie",
-    "filterFabric": "Fabric",
+    "filterLoader": "Loader",
     "filterEngine": "Silnik",
     "search": "Szukaj...",
     "gameExited": "--- Gra zakończona (kod: {{code}}) ---",

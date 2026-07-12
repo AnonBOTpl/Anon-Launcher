@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getProject, getProjectVersions, formatDownloads } from "@/lib/modrinth";
 import type { ModrinthProject, ModrinthVersion } from "@/types/modrinth";
 import type { ModpackProgressEvent } from "@/types/content";
+import { getIconIdentifier } from "@/lib/instanceIcon";
 import {
   Dialog,
   DialogContent,
@@ -174,6 +175,7 @@ function ImportFromLinkDialog({ open, onOpenChange, onImported }: ImportFromLink
           javaVersion: "21",
           customJavaPath: null,
           jvmArgs: null,
+          icon: project.icon_url ? getIconIdentifier("url", project.icon_url) : null,
         },
       });
     } catch (err) {

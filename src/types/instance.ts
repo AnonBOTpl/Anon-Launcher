@@ -1,5 +1,5 @@
 /** Current schema version for instance manifests */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /** Supported Minecraft loaders */
 export type LoaderType = "vanilla" | "fabric" | "neoforge";
@@ -24,6 +24,10 @@ export interface InstanceManifest {
   ram: number;
   /** JVM arguments (optional) */
   jvmArgs?: string;
+    /** Instance icon — "item:diamond" for built-in items, "url:https://..." for custom images */
+  icon?: string;
+  /** Number of times this instance has been launched */
+  launchCount?: number;
   /** ISO date of creation */
   createdAt: string;
   /** ISO date of last update */
@@ -40,6 +44,8 @@ export interface CreateInstanceInput {
   customJavaPath?: string;
   ram: number;
   jvmArgs?: string;
+  icon?: string;
+  launchCount?: number;
 }
 
 /** Result of a manifest read operation */

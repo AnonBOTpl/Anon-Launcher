@@ -23,6 +23,9 @@ import LoaderSelect from "@/components/LoaderSelect";
 import JavaSettings from "@/components/JavaSettings";
 import ModpackSearch from "@/components/ModpackSearch";
 import type { ModpackSelection } from "@/components/ModpackSearch";
+import IconPicker from "@/components/IconPicker";
+import InstanceIcon from "@/components/InstanceIcon";
+import { getIconIdentifier } from "@/lib/instanceIcon";
 import { getJavaVersionForMc, getJavaPath, downloadJava } from "@/lib/java";
 import { useJavaRuntime } from "@/hooks/useJavaRuntime";
 
@@ -60,6 +63,9 @@ function CreateInstanceForm() {
   const [customJavaPath, setCustomJavaPath] = useState("");
   const [ram, setRam] = useState(4096);
   const [jvmArgs, setJvmArgs] = useState("");
+
+  // Icon state
+  const [icon, setIcon] = useState("");
 
   // Modpack state
   const [modpackSelection, setModpackSelection] = useState<ModpackSelection | null>(null);
@@ -220,6 +226,7 @@ function CreateInstanceForm() {
           customJavaPath: customJavaPath.trim() || undefined,
           ram,
           jvmArgs: jvmArgs.trim() || undefined,
+          icon: icon || undefined,
         };
 
         await invoke("create_instance", { input });
@@ -370,6 +377,9 @@ function CreateInstanceForm() {
             javaVersion,
             customJavaPath: customJavaPath.trim() || undefined,
             jvmArgs: jvmArgs.trim() || undefined,
+            icon: modpackSelection.modpackIconUrl
+              ? getIconIdentifier("url", modpackSelection.modpackIconUrl)
+              : undefined,
           },
         });
 
@@ -595,6 +605,19 @@ function CreateInstanceForm() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Icon picker */}
+          <div className="space-y-2">
+            <Label>{t("create.icon") ?? "Icon"}</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 ring-1 ring-primary/10">
+                {icon ? <InstanceIcon instance={{ name, icon }} size={22} /> : <span className="text-sm font-bold text-muted-foreground">?</span>}
+              </div>
+              <div className="flex-1">
+                <IconPicker value={icon} onChange={setIcon} showRandom />
+              </div>
+            </div>
           </div>
 
           {/* JVM Arguments */}

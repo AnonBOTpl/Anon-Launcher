@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useInstances } from "@/hooks/useInstances";
@@ -12,6 +12,26 @@ function Dashboard() {
   const { instances, loading, error, refresh } = useInstances();
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importLinkOpen, setImportLinkOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter + sort instances
+  const filteredInstances = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    let filtered = instances;
+    if (q) {
+      filtered = instances.filter((i) =>
+        i.name.toLowerCase().includes(q),
+      );
+    }
+    // Sort by launchCount descending (most played first), then alphabetically
+    return [...filtered].sort((a, b) => {
+      const aCount = a.launchCount ?? 0;
+      const bCount = b.launchCount ?? 0;
+      if (bCount !== aCount) return bCount - aCount;
+      return a.name.localeCompare(b.name);
+    });
+  }, [instances, searchQuery]);
 
   return (
     <div className="min-h-full">
@@ -178,13 +198,97 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Search bar */}
+        {!loading && !error && instances.length > 0 && (
+          <div className="mb-6 flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("dashboard.searchPlaceholder")}
+                className="w-full h-9 rounded-xl bg-card/60 border border-border/50 pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all backdrop-blur-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {searchQuery
+                ? t("dashboard.filteredCount", { count: filteredInstances.length, total: instances.length })
+                : t("dashboard.sortedByLaunches")}
+            </span>
+          </div>
+        )}
+
         {/* Instance grid with all instances — staggered animation */}
         {!loading && instances.length > 0 && (
           <div className="animate-page-enter">
-            <InstanceGrid
-              instances={instances}
-              onInstanceDeleted={refresh}
-            />
+            {filteredInstances.length > 0 ? (
+              <InstanceGrid
+                instances={filteredInstances}
+                onInstanceDeleted={refresh}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/50 py-24">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-muted-foreground/50 mb-4"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <p className="text-sm text-muted-foreground">{t("dashboard.noSearchResults")}</p>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="mt-3 text-xs text-primary hover:underline"
+                >
+                  {t("dashboard.clearSearch")}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

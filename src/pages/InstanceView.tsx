@@ -32,13 +32,13 @@ function InstanceView() {
   const { status: launchStatus, launch, stop, logs, clearLogs } = useLaunch(instanceName ?? undefined);
   const crashReportsHook = useCrashReports(instanceName ?? undefined);
   const [canLaunch, setCanLaunch] = useState(true);
+  const [launching, setLaunching] = useState(false);
   const { t } = useTranslation();
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [gameDir, setGameDir] = useState("");
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [crashBannerDismissed, setCrashBannerDismissed] = useState(false);
   const [, setSearchParams] = useSearchParams();
-  const dlUnlisten = useRef<UnlistenFn | null>(null);
   // Quick Play: server address set by QuickPlay component, consumed by handleLaunch
   const quickPlayServerRef = useRef<{ ip: string; port?: number } | null>(null);
 
@@ -83,26 +83,40 @@ function InstanceView() {
     });
   }, []);
 
-  // Listen for download progress events from backend
+  // Listen for download events from backend
+  // These persist across component re-mounts to handle navigation during download
   useEffect(() => {
     let cancelled = false;
+    const unlisteners: UnlistenFn[] = [];
 
     async function setup() {
-      const unlisten = await listen<DownloadProgress>("download:progress", (event) => {
+      // Download progress — also locks the launch button
+      const unlistenProgress = await listen<DownloadProgress>("download:progress", (event) => {
         if (!cancelled) {
           setDownloadProgress(event.payload);
+          setLaunching(true);
         }
       });
-      if (!cancelled) {
-        dlUnlisten.current = unlisten;
-      }
+      unlisteners.push(unlistenProgress);
+
+      // Download error — unlock button and show error
+      const unlistenError = await listen<{ phase: string; message: string }>("download:error", (event) => {
+        if (!cancelled) {
+          setDownloadProgress(null);
+          setLaunching(false);
+          setLaunchError(event.payload.message);
+        }
+      });
+      unlisteners.push(unlistenError);
     }
 
     setup();
 
     return () => {
       cancelled = true;
-      dlUnlisten.current?.();
+      for (const fn of unlisteners) {
+        fn();
+      }
     };
   }, []);
 
@@ -139,6 +153,7 @@ function InstanceView() {
     if (!manifest || !instanceName) return;
 
     setLaunchError(null);
+    setLaunching(true);
     // Show initial preparing state
     setDownloadProgress({ phase: "client", current: 0, total: 1, status: t("launch.preparing") });
 
@@ -281,8 +296,10 @@ function InstanceView() {
       setDownloadProgress(null);
       setLaunchError(message);
       console.error("[Launch Error]", message, "\nFull error:", err);
+    } finally {
+      setLaunching(false);
     }
-  }, [manifest, instanceName, launch, gameDir]);
+  }, [manifest, instanceName, launch, gameDir, t]);
 
   // Quick Play handler: stores server address and triggers launch
   const handleQuickPlay = useCallback((ip: string, port?: number) => {
@@ -554,7 +571,7 @@ function InstanceView() {
           launchStatus={launchStatus}
           onLaunch={handleLaunch}
           onStop={() => stop(instanceName!)}
-          canLaunch={canLaunch}
+          canLaunch={canLaunch && !launching}
           onUpdated={handleUpdated}
           onDeleted={handleDeleted}
           onOpenConsole={openConsoleWindow}
