@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title i18n="html.title">AnonLauncher — Modern Minecraft Launcher</title>
+  <meta name="description" content="A modern, lightweight Minecraft launcher with full mod, modpack, resource pack, and shader support. Open source, cross-platform, built with Tauri + Rust + React." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AnonLauncher — Modern Minecraft Launcher" />
+  <meta property="og:description" content="A modern, lightweight Minecraft launcher with full mod, modpack, resource pack, and shader support." />
+  <meta property="og:image" content="assets/images/og-image.png" />
+  <meta property="og:url" content="https://anonbotpl.github.io/Anon-Launcher/" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AnonLauncher" />
+  <meta name="twitter:description" content="A modern, lightweight Minecraft launcher" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/images/favicon.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Navigation -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="assets/images/logo.png" alt="AnonLauncher" class="nav-logo-icon" style="width:32px;height:32px;object-fit:contain;" />
+      <span class="nav-logo-text">Anon<span class="text-purple">Launcher</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link" i18n="nav.features">Features</a>
+      <a href="#download" class="nav-link" i18n="nav.download">Download</a>
+
+      <!-- Language Switcher -->
+      <div class="lang-switcher">
+        <button class="lang-current" onclick="toggleLangMenu()" aria-label="Switch language">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          <span id="lang-current-label">EN</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lang-chevron"><polyline points="6 9 12 15 18 9" /></svg>
+        </button>
+        <div class="lang-menu" id="lang-menu">
+          <button class="lang-option" data-lang="en" onclick="switchLang('en')">🇬🇧 English</button>
+          <button class="lang-option" data-lang="pl" onclick="switchLang('pl')">🇵🇱 Polski</button>
+          <button class="lang-option" data-lang="de" onclick="switchLang('de')">🇩🇪 Deutsch</button>
+          <button class="lang-option" data-lang="ja" onclick="switchLang('ja')">🇯🇵 日本語</button>
+        </div>
+      </div>
+
+      <a href="https://github.com/AnonBOTpl/Anon-Launcher" target="_blank" rel="noopener" class="nav-link nav-link-github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>
+        <span i18n="nav.github">GitHub</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Hero -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="container hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge" id="release-badge" i18n="hero.badge">v0.1.3</div>
+      <h1 class="hero-title" i18n="hero.title">
+        A modern<br />
+        <span class="text-purple">Minecraft launcher</span>
+      </h1>
+      <p class="hero-subtitle" i18n="hero.subtitle">
+        Lightweight, open source, and packed with features.<br />
+        Manage instances, mods, modpacks, shaders — all in one place.
+      </p>
+      <div class="hero-actions">
+        <a href="#download" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span i18n="hero.download">Download</span>
+        </a>
+        <a href="https://github.com/AnonBOTpl/Anon-Launcher" target="_blank" rel="noopener" class="btn btn-secondary">
+          <span i18n="hero.viewOnGitHub">View on GitHub</span>
+        </a>
+      </div>
+      <div class="hero-tech">
+        <span i18n="hero.builtWith">Built with</span>
+        <span class="tech-item"><img src="https://img.shields.io/badge/Tauri-v2-FFC131?logo=tauri&labelColor=1a1a1a" alt="Tauri" /></span>
+        <span class="tech-item"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&labelColor=1a1a1a" alt="React" /></span>
+        <span class="tech-item"><img src="https://img.shields.io/badge/Rust-2021-DEA584?logo=rust&labelColor=1a1a1a" alt="Rust" /></span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-mockup" style="background:none;border:none;box-shadow:none;padding:0;">
+        <img src="assets/images/hero-preview.png" alt="AnonLauncher preview" style="width:100%;border-radius:16px;box-shadow:0 0 60px rgba(168,85,247,0.25);" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Features -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="features" class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" i18n="features.title">Everything you need</h2>
+      <p class="section-desc" i18n="features.desc">From mod management to one-click modpack installation — AnonLauncher handles it all.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg></div>
+        <h3 class="feature-title" i18n="f1.title">Multi-Instance</h3>
+        <p class="feature-desc" i18n="f1.desc">Create, clone, export, and import Minecraft instances. Keep Vanilla, Fabric, and modpacks separate.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg></div>
+        <h3 class="feature-title" i18n="f2.title">Fabric + NeoForge</h3>
+        <p class="feature-desc" i18n="f2.desc">Full support for Vanilla, Fabric, and NeoForge. Fabric auto-downloads API, NeoForge has a one-click installer.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></div>
+        <h3 class="feature-title" i18n="f3.title">Mod Management</h3>
+        <p class="feature-desc" i18n="f3.desc">Search, install, update, and remove mods with auto-dependency resolution. Batch updates with snapshots.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" /><polyline points="21 16 21 21 16 21" /><line x1="15" y1="15" x2="21" y2="21" /><line x1="4" y1="4" x2="9" y2="9" /></svg></div>
+        <h3 class="feature-title" i18n="f4.title">Modpack Install</h3>
+        <p class="feature-desc" i18n="f4.desc">One-click install from Modrinth (.mrpack). SHA1 verified downloads with live progress tracking.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg></div>
+        <h3 class="feature-title" i18n="f5.title">Auto Java</h3>
+        <p class="feature-desc" i18n="f5.desc">Automatic Java download from Adoptium API. Supports Java 8 through 25 — no manual setup needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg></div>
+        <h3 class="feature-title" i18n="f6.title">Snapshots</h3>
+        <p class="feature-desc" i18n="f6.desc">Full or metadata-only backups. Perfect for safe mod updates — restore instantly if something breaks.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg></div>
+        <h3 class="feature-title" i18n="f7.title">Resource Packs & Shaders</h3>
+        <p class="feature-desc" i18n="f7.desc">Browse and install resource packs and shaderpacks directly from Modrinth. Auto-installs Iris + Sodium.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg></div>
+        <h3 class="feature-title" i18n="f8.title">Game Insights</h3>
+        <p class="feature-desc" i18n="f8.desc">Screenshot gallery, disk usage stats, mod counts, and quick-access links to saves and screenshots.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Screenshots -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" i18n="screenshots.title">See it in action</h2>
+      <p class="section-desc" i18n="screenshots.desc">Clean, modern UI designed for productivity.</p>
+    </div>
+    <div class="screenshots-grid">
+      <div class="screenshot-card" onclick="openLightbox('assets/images/screenshot-dashboard.png', 'Dashboard')" style="cursor:zoom-in;">
+        <img src="assets/images/screenshot-dashboard.png" alt="Dashboard" style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;" />
+      </div>
+      <div class="screenshot-card" onclick="openLightbox('assets/images/screenshot-mods.png', 'Mod Management')" style="cursor:zoom-in;">
+        <img src="assets/images/screenshot-mods.png" alt="Mod Management" style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;" />
+      </div>
+      <div class="screenshot-card" onclick="openLightbox('assets/images/screenshot-modpack.png', 'Modpack Install')" style="cursor:zoom-in;">
+        <img src="assets/images/screenshot-modpack.png" alt="Modpack Install" style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;" />
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Download -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="download" class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" i18n="download.title">Download</h2>
+      <p class="section-desc" i18n="download.desc">Grab the latest release for Windows.</p>
+    </div>
+    <div class="download-cards">
+      <div class="download-card">
+        <div class="download-os-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 8v8" /><path d="M15 8v8" /><path d="M9 12h6" /></svg></div>
+        <h3 class="download-os" i18n="download.windows">Windows</h3>
+        <p class="download-desc" i18n="download.windowsDesc">NSIS installer · x64</p>
+        <a href="https://github.com/AnonBOTpl/Anon-Launcher/releases/latest/download/AnonLauncher_0.1.3_x64-setup.exe" class="btn btn-primary" id="download-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+          <span i18n="download.btn" id="download-btn-text">Download v0.1.3</span>
+        </a>
+      </div>
+      <div class="download-card download-card-muted">
+        <div class="download-os-icon muted"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" /></svg></div>
+        <h3 class="download-os muted" i18n="download.linux">Linux / macOS</h3>
+        <p class="download-desc" i18n="download.linuxDesc">Build from source</p>
+        <a href="https://github.com/AnonBOTpl/Anon-Launcher?tab=readme-ov-file#-quick-start" target="_blank" rel="noopener" class="btn btn-secondary">
+          <span i18n="download.linuxBtn">Build instructions</span>
+        </a>
+      </div>
+    </div>
+    <div class="download-note" i18n-html="download.note">
+      <p>All releases are available on <a href="https://github.com/AnonBOTpl/Anon-Launcher/releases" target="_blank" rel="noopener">GitHub Releases</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Footer -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-left">
+      <span class="footer-logo">Anon<span class="text-purple">Launcher</span></span>
+      <span class="footer-meta" i18n="footer.license">AGPL v3 · 2026</span>
+    </div>
+    <div class="footer-right">
+      <a href="https://github.com/AnonBOTpl/Anon-Launcher" target="_blank" rel="noopener" class="footer-link" i18n="nav.github">GitHub</a>
+      <a href="https://github.com/AnonBOTpl/Anon-Launcher/releases" target="_blank" rel="noopener" class="footer-link" i18n="footer.releases">Releases</a>
+      <a href="https://github.com/AnonBOTpl/Anon-Launcher/blob/master/LICENSE" target="_blank" rel="noopener" class="footer-link" i18n="footer.licensePage">License</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- i18n JavaScript -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+// ── Language detection & storage ─────────────────────────────────
+const SUPPORTED = ["en", "pl", "de", "ja"];
+const DEFAULT_LANG = "en";
+
+function detectLang() {
+  const stored = localStorage.getItem("anon-lang");
+  if (stored && SUPPORTED.includes(stored)) return stored;
+  const browser = (navigator.language || "").slice(0, 2);
+  if (SUPPORTED.includes(browser)) return browser;
+  return DEFAULT_LANG;
+}
+
+let currentLang = detectLang();
+let translations = {};
+
+// ── Load translations ─────────────────────────────────────────────
+fetch("locales.json")
+  .then(r => r.json())
+  .then(data => {
+    translations = data;
+    applyLang(currentLang);
+  })
+  .catch(() => {});
+
+// ── Apply translations ────────────────────────────────────────────
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("anon-lang", lang);
+  document.documentElement.lang = lang;
+
+  const t = translations[lang];
+  if (!t) return;
+
+  // Simple text keys: <el i18n="key">
+  document.querySelectorAll("[i18n]").forEach(el => {
+    const key = el.getAttribute("i18n");
+    const text = t[key];
+    if (text) {
+      el.innerHTML = text;
+    }
+  });
+
+  // HTML keys: <el i18n-html="key">
+  document.querySelectorAll("[i18n-html]").forEach(el => {
+    const key = el.getAttribute("i18n-html");
+    const text = t[key];
+    if (text) {
+      el.innerHTML = text;
+    }
+  });
+
+  // Update title
+  if (t["html.title"]) {
+    document.title = t["html.title"];
+  }
+
+  // Update switcher label
+  const label = document.getElementById("lang-current-label");
+  if (label) label.textContent = lang.toUpperCase();
+
+  // Highlight active option
+  document.querySelectorAll(".lang-option").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === lang);
+  });
+}
+
+// ── Language switcher UI ──────────────────────────────────────────
+function toggleLangMenu() {
+  document.getElementById("lang-menu").classList.toggle("open");
+}
+
+function switchLang(lang) {
+  applyLang(lang);
+  document.getElementById("lang-menu").classList.remove("open");
+}
+
+// Close menu on outside click
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".lang-switcher")) {
+    document.getElementById("lang-menu")?.classList.remove("open");
+  }
+});
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Lightbox -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="lightbox" onclick="closeLightbox()" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  cursor:zoom-out;
+">
+  <div onclick="event.stopPropagation()" style="position:relative;max-width:1200px;width:100%;">
+    <button onclick="closeLightbox()" style="
+      position:absolute;
+      top:-16px;
+      right:-16px;
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      background:#1a1a2e;
+      border:1px solid rgba(168,85,247,0.3);
+      color:#a855f7;
+      font-size:18px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+    ">✕</button>
+    <img id="lightbox-img" src="" alt="" style="
+      width:100%;
+      border-radius:12px;
+      box-shadow:0 0 80px rgba(168,85,247,0.3);
+      display:block;
+    " />
+    <p id="lightbox-caption" style="
+      text-align:center;
+      color:rgba(255,255,255,0.5);
+      font-size:14px;
+      margin-top:12px;
+    "></p>
+  </div>
+</div>
+
+<script>
+function openLightbox(src, caption) {
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-caption').textContent = caption;
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
+</script>
+
+
+<script>
+// ── Dynamic GitHub Release ────────────────────────────────────────
+(async function() {
+  try {
+    const resp = await fetch(
+      'https://api.github.com/repos/AnonBOTpl/Anon-Launcher/releases/latest',
+      { headers: { 'Accept': 'application/vnd.github+json' } }
+    );
+    if (!resp.ok) return;
+    const release = await resp.json();
+
+    const tag = release.tag_name || '';                         // np. "v0.1.4"
+    const version = tag.replace(/^v/, '');                     // np. "0.1.4"
+    const displayTag = tag.startsWith('v') ? tag : `v${version}`;
+
+    // Znajdź asset .exe (NSIS installer)
+    const exeAsset = release.assets?.find(a =>
+      a.name.endsWith('.exe') && a.name.includes('x64')
+    );
+    const downloadUrl = exeAsset?.browser_download_url
+      || `https://github.com/AnonBOTpl/Anon-Launcher/releases/latest`;
+
+    // Zaktualizuj badge wersji w hero
+    const badge = document.getElementById('release-badge');
+    if (badge) badge.textContent = displayTag;
+
+    // Zaktualizuj przycisk download
+    const btn = document.getElementById('download-btn');
+    if (btn) btn.href = downloadUrl;
+
+    const btnText = document.getElementById('download-btn-text');
+    if (btnText) btnText.textContent = `Download ${displayTag}`;
+
+    // Zaktualizuj tłumaczenia (nadpisz klucze dla aktywnego języka)
+    if (window._i18n) {
+      const lang = document.documentElement.getAttribute('data-lang') || 'en';
+      if (window._i18n[lang]) {
+        window._i18n[lang]['hero.badge'] = displayTag;
+        window._i18n[lang]['download.btn'] = `Download ${displayTag}`;
+      }
+    }
+  } catch (e) {
+    // Brak sieci lub rate limit — zostają hardcoded wartości
+    console.debug('GitHub release fetch failed:', e.message);
+  }
+})();
+</script>
+
+</body>
+</html>

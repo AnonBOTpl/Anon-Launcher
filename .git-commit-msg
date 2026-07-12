@@ -1,0 +1,9 @@
+feat: internationalization (i18next) - full EN/PL support
+
+TASK-I18N-ETAP-01: i18next setup, locale JSON (EN+PL), Settings language switcher
+TASK-I18N-ETAP-02: Core UI translation (Dashboard, Sidebar, HeroCard, InstanceView)
+TASK-I18N-ETAP-03: Management translation (mods, content, snapshots, accounts, crash)
+TASK-I18N-ETAP-04: Forms, dialogs, JavaSettings, VersionSelect, hooks
+
+42+ components, 3 hooks, 400+ keys across EN+PL locale files
+New namespaces: edit, delete, clone, export, import, java, version, loader

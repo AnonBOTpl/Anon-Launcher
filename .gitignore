@@ -1,0 +1,51 @@
+# Node
+lerna-*.log
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite
+*.local
+dist/
+dist-ssr/
+prompts/
+
+# Editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swo
+*.swp
+*~
+.idea/
+
+# Rust
+src-tauri/Cargo.lock
+src-tauri/target/
+
+# Tauri
+src-tauri/gen/
+
+# Environment
+.env
+.env.*.local
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Project notes
+AUDYT_PROJEKTU.md
+DEVELOPMENT_LOG.md
+ideas.md
+kontynuacja.md
+PLAN.md
+Projekt - Uniwersalny Launcher Minecraft.md
+
+# Tasks
+tasks/
+Tasks/

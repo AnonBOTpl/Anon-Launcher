@@ -1,0 +1,55 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicoverbruggen/tauri-v2-schema/refs/heads/main/schema.json",
+  "productName": "AnonLauncher",
+  "version": "0.1.6",
+  "identifier": "com.anonlauncher.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https: data:; connect-src 'self' https://api.modrinth.com https://api.github.com https://piston-meta.mojang.com https://resources.download.minecraft.net https://libraries.minecraft.net https://piston-data.mojang.com https://meta.fabricmc.net https://api.adoptium.net https://cdn.modrinth.com https://maven.neoforged.net; font-src 'self' data:; frame-src 'self' https://login.live.com;",
+      "assetProtocol": {
+        "scope": [
+          "$APPDATA/instances/**"
+        ]
+      }
+    },
+    "windows": [
+      {
+        "title": "AnonLauncher",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "licenseFile": "LICENSE.rtf",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp",
+        "startMenuFolder": "AnonLauncher",
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}
