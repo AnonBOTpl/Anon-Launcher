@@ -50,13 +50,7 @@ Projekt - Uniwersalny Launcher Minecraft.md
 tasks/
 Tasks/
 
-# AnonChat Java agent
-anon-chat/.gradle/
-anon-chat/build/
-anon-chat/gradle/
-anon-chat/gradlew
-anon-chat/gradlew.bat
+# Ignore build artifacts for the Fabric mod
 anon-chat-mod/
 
-# LabyMod
-LabyMod-4.jar
+
