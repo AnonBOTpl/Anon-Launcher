@@ -24,13 +24,17 @@ pub fn migrate_manifest(data: Value) -> Result<(InstanceManifest, bool), Manifes
         .unwrap_or(0) as u32;
 
     if current_sv > CURRENT_SCHEMA_VERSION {
-        return Err(ManifestError {
-            code: ManifestErrorCode::InvalidSchema,
-            message: format!(
-                "Manifest schema version {} is newer than current version {}",
-                current_sv, CURRENT_SCHEMA_VERSION
-            ),
-        });
+        // Instance JSON has a newer schema version than the code knows.
+        // This happens when schema was bumped in a previous session but
+        // changes were reverted. Serde ignores unknown fields by default,
+        // so we can still deserialize whatever fields we know.
+        let manifest: InstanceManifest = serde_json::from_value(data).map_err(|e| {
+            ManifestError {
+                code: ManifestErrorCode::ParseError,
+                message: format!("Failed to parse newer-version manifest: {}", e),
+            }
+        })?;
+        return Ok((manifest, false));
     }
 
     let mut migrated = false;

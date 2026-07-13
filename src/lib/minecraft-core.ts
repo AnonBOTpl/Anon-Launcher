@@ -167,6 +167,11 @@ export function generateLaunchArgs(
   //   finalJvmArgs.push(loggingArg);
   // }
 
+  // AnonChat Java agent — intercept in-game chat for filtering/tabs
+  if (options.anonChatPath) {
+    finalJvmArgs.push(`-javaagent:${options.anonChatPath}`);
+  }
+
   // Custom JVM args
   if (jvmArgs) {
     const custom = jvmArgs

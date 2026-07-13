@@ -226,6 +226,9 @@ export interface LaunchOptions {
     ip: string;
     port?: number;
   };
+  /** Path to the AnonChat JAR agent */
+  anonChatPath?: string;
+
   /** Whether to detach the Java process */
   detached?: boolean;
 }

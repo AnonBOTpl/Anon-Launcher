@@ -1,0 +1,54 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // ASM for bytecode manipulation
+    implementation 'org.ow2.asm:asm:9.7.1'
+    implementation 'org.ow2.asm:asm-commons:9.7.1'
+    implementation 'org.ow2.asm:asm-util:9.7.1'
+
+    // JSON parsing (lightweight, no Gson/Gson needed)
+    implementation 'com.google.code.gson:gson:2.11.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    manifest {
+        attributes(
+            'Premain-Class': 'net.anonlauncher.chat.Agent',
+            'Can-Retransform-Classes': 'true',
+            'Can-Set-Native-Method-Prefix': 'false',
+            'Implementation-Title': 'AnonChat',
+            'Implementation-Version': '1.0.0'
+        )
+    }
+
+    // Fat JAR — bundle ASM and Gson inside
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    // Exclude signature files from bundled JARs
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Simple task to build and copy to launcher's resources
+task copyToLauncher(type: Copy) {
+    dependsOn jar
+    from jar.archiveFile
+    into layout.projectDirectory.file('../src-tauri/resources/')
+    rename { 'anonchat.jar' }
+}
+
+build.dependsOn copyToLauncher

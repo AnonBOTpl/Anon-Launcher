@@ -49,3 +49,10 @@ Projekt - Uniwersalny Launcher Minecraft.md
 # Tasks
 tasks/
 Tasks/
+
+# AnonChat Java agent
+anon-chat/.gradle/
+anon-chat/build/
+anon-chat/gradle/
+anon-chat/gradlew
+anon-chat/gradlew.bat
