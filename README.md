@@ -19,7 +19,9 @@
 
 ---
 
-![Dashboard](images/dashboard.png)
+<p align="center">
+  <img src="images/dashboard.png" alt="Dashboard">
+</p>
 
 ---
 
