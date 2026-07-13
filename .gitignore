@@ -56,3 +56,7 @@ anon-chat/build/
 anon-chat/gradle/
 anon-chat/gradlew
 anon-chat/gradlew.bat
+anon-chat-mod/
+
+# LabyMod
+LabyMod-4.jar

@@ -24,7 +24,21 @@ function detectOS(): "windows" | "osx" | "linux" {
 }
 
 function detectArch(): string {
-  return navigator.platform.includes("64") ? "x64" : "x86";
+  // On Windows, navigator.platform always returns "Win32" regardless of arch.
+  // Use userAgent to distinguish x64 vs ARM64.
+  const ua = navigator.userAgent || "";
+  if (/arm(64)?/i.test(ua) || /aarch64/i.test(ua)) {
+    return "arm64";
+  }
+  if (/win64|x64|wow64|ia64/i.test(ua) || navigator.platform.includes("64")) {
+    return "x64";
+  }
+  // Fallback for browsers that don't expose arch in UA
+  // On macOS, platform is "MacIntel" (includes "Intel" > 64-bit)
+  if (navigator.platform.includes("Intel") || navigator.platform.includes("PPC")) {
+    return "x64";
+  }
+  return "x86";
 }
 
 // ─── Rule Evaluation ─────────────────────────────────────────────────
@@ -116,7 +130,20 @@ function resolveLibrary(lib: MinecraftLibrary): ResolvedLibrary | null {
     const nativeKey = lib.natives[os === "osx" ? "osx" : os];
     if (!nativeKey) return null;
 
-    const classifier = nativeKey.replace("${arch}", detectArch() === "x64" ? "64" : "86");
+    const arch = detectArch();
+    // Resolve ${arch} placeholder — Mojang uses "64" for x64 and "86" for x86
+    const archSuffix = arch === "x64" ? "64" : arch === "arm64" ? "arm64" : "86";
+    const classifier = nativeKey.replace("${arch}", archSuffix);
+
+    // ── Architecture classifier guard ────────────────────────────
+    // Some version JSON entries may have lib.natives values that target
+    // a specific architecture without proper os.arch rules (e.g.
+    // "natives-windows-arm64" when < 1.21 didn't include arch rules).
+    // Reject classifiers that explicitly name a different architecture.
+    const classifierLower = classifier.toLowerCase();
+    if ((classifierLower.includes("arm64") || classifierLower.includes("aarch64")) && arch !== "arm64") {
+      return null;
+    }
     const download = lib.downloads?.classifiers?.[classifier];
 
     if (download) {

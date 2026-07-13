@@ -31,9 +31,6 @@
     ]
   },
   "bundle": {
-    "resources": {
-      "resources/anonchat.jar": "anonchat.jar"
-    },
     "active": true,
     "targets": "nsis",
     "licenseFile": "LICENSE.rtf",

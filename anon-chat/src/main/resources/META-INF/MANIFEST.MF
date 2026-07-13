@@ -1,5 +1,0 @@
-Premain-Class: net.anonlauncher.chat.Agent
-Can-Retransform-Classes: true
-Implementation-Title: AnonChat
-Implementation-Version: 1.0.0
-

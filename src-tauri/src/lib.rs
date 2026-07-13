@@ -916,35 +916,6 @@ fn get_instance_size(
     game_data::get_instance_size(&app_data_dir, &instance_name)
 }
 
-// ─── AnonChat Path Command ─────────────────────────────────────────
-
-#[tauri::command]
-fn get_anonchat_path(app_handle: AppHandle) -> Result<String, String> {
-    // Search for anonchat.jar in known locations
-    let search_paths = [
-        // Production: bundled alongside the executable
-        app_handle.path().resource_dir()
-            .map(|d| d.join("anonchat.jar")).ok(),
-        // Dev mode: check project directories
-        Some(std::path::PathBuf::from("src-tauri/resources/anonchat.jar")),
-        Some(std::path::PathBuf::from("resources/anonchat.jar")),
-        Some(std::path::PathBuf::from("anon-chat/build/libs/anon-chat.jar")),
-    ];
-
-    for path_opt in &search_paths {
-        if let Some(path) = path_opt {
-            if path.exists() {
-                if let Ok(abs_path) = path.canonicalize() {
-                    return Ok(abs_path.to_string_lossy().to_string());
-                }
-                return Ok(path.to_string_lossy().to_string());
-            }
-        }
-    }
-
-    Err("anonchat.jar not found".to_string())
-}
-
 // ─── App Icon Command ──────────────────────────────────────────────
 
 #[tauri::command]
@@ -1142,7 +1113,6 @@ pub fn run() {
             get_instance_size,
             read_screenshot,
             read_app_icon,
-            get_anonchat_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

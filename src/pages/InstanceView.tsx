@@ -257,14 +257,6 @@ function InstanceView() {
       const serverAddress = quickPlayServerRef.current;
       quickPlayServerRef.current = null; // consume the value
 
-      // Resolve AnonChat path for in-game chat filtering (optional)
-      let anonChatPath: string | undefined;
-      try {
-        anonChatPath = await invoke<string>("get_anonchat_path");
-      } catch {
-        // AnonChat not available — skip silently
-      }
-
       // Generate launch arguments
       const args = generateLaunchArgs({
         javaPath,
@@ -280,7 +272,6 @@ function InstanceView() {
         },
         memory: manifest.ram,
         jvmArgs: manifest.jvmArgs,
-        anonChatPath,
         ...(serverAddress ? { server: serverAddress } : {}),
       });
 

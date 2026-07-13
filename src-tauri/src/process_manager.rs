@@ -160,7 +160,7 @@ impl ProcessManager {
             // Instead, a separate health-check thread monitors the PID.
         });
 
-        // ── Health-check thread: polls PID every 3s ──────────────
+        // ── Health-check thread: polls PID every 5s ──────────────
         // NeoForge/Forge use a launcher pattern where the initial JVM
         // may exit after forking the real Minecraft process. We can't
         // rely on reader thread EOF to detect game exit.
