@@ -1,215 +1,87 @@
 <div align="center">
 
-# AnonLauncher 🚀
+<img src="images/logo.png" alt="AnonLauncher" width="100" />
 
-**A modern, lightweight Minecraft launcher** — cross-platform, with full mod, modpack, resource pack, and shader support.
+# AnonLauncher
 
-<br />
+**A modern, lightweight Minecraft launcher**
 
-![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?logo=tauri&labelColor=1a1a1a)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&labelColor=1a1a1a)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&labelColor=1a1a1a)
-![Rust](https://img.shields.io/badge/Rust-2021-DEA584?logo=rust&labelColor=1a1a1a)
-![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&labelColor=1a1a1a)
+![Version](https://img.shields.io/github/v/release/AnonBOTpl/Anon-Launcher?style=flat-square&color=a855f7)
+![Downloads](https://img.shields.io/github/downloads/AnonBOTpl/Anon-Launcher/total?style=flat-square&color=a855f7)
+![License](https://img.shields.io/badge/License-AGPL%20v3-blue?style=flat-square)
+![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square&logo=tauri&labelColor=1a1a1a)
+![Rust](https://img.shields.io/badge/Rust-2021-DEA584?style=flat-square&logo=rust&labelColor=1a1a1a)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&labelColor=1a1a1a)
 
-[![AGPL License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-
-[🇵🇱 Polski](README-pl.md)
+[🌐 Website](https://anonbotpl.github.io/Anon-Launcher/) · [📦 Releases](https://github.com/AnonBOTpl/Anon-Launcher/releases) · [🇵🇱 Polski](README-pl.md)
 
 </div>
 
 ---
 
-## ✨ Overview
-
-AnonLauncher is a modern, lightweight and universal Minecraft launcher that lets you easily manage multiple **game instances**, **mods**, **modpacks**, **resource packs**, and **shaderpacks** — all in one sleek interface.
-
-### Key Features
-
-| Feature | Status |
-|---|---|
-| ✅ Multi-instance management (create, clone, ZIP export/import) | Done |
-| ✅ Vanilla + Fabric + NeoForge launch | Done |
-| ✅ Auto Java download from Adoptium API | Done |
-| ✅ Microsoft Device Code Flow login | Done |
-| ✅ Multi-account with Stronghold encrypted storage | Done |
-| ✅ Mod search and installation (Modrinth API) | Done |
-| ✅ Mod updates with batch updates | Done |
-| ✅ Dependency detection and auto-install | Done |
-| ✅ Snapshots (full copy / metadata only) | Done |
-| ✅ Modpack (.mrpack) installation with progress bar | Done |
-| ✅ Resource packs and shaderpacks with icons and versions | Done |
-| ✅ Auto-install Iris Shaders for shaderpacks | Done |
-| ✅ Tabbed UI with filtering (Mods / Resources / Shaders / Snapshots / Logs) | Done |
-| ✅ Detachable console window with filters and search | Done |
-| ✅ Minecraft 26.x support (no `1.` prefix) + Java 25 | Done |
-| ✅ Game Overview tab with screenshots and statistics | Done |
-| ✅ Update checker (GitHub Releases) | Done |
-| ✅ i18n — English + Polish | Done |
+![Dashboard](images/dashboard.png)
 
 ---
 
-## 🖼️ Screenshots
+## Features
 
-*Dashboard* | *Instance View* | *Mod Search*
-:---:|:---:|:---:
-![Dashboard](https://via.placeholder.com/400x250?text=Dashboard) | ![Instance View](https://via.placeholder.com/400x250?text=Instance+View) | ![Mod Search](https://via.placeholder.com/400x250?text=Mod+Search)
-
----
-
-## 🧱 Tech Stack
-
-| Layer | Technology |
-|---------|------------|
-| **Frontend** | React 19 + TypeScript 5 |
-| **Styling** | Tailwind CSS v4 + shadcn/ui (base-nova) |
-| **Desktop Framework** | Tauri v2 (Rust) |
-| **Backend** | Rust 2021 edition |
-| **Loaders** | Vanilla, Fabric, NeoForge |
-| **Auth** | Microsoft Device Code Flow + Stronghold encryption |
-| **APIs** | Modrinth v2, Mojang (piston-meta), Adoptium, Fabric Meta |
-| **Icons** | Lucide React |
-| **Font** | Geist Variable |
-| **Installer** | NSIS (Nullsoft) |
-
-### Architecture
-
-The project uses a **hybrid approach**:
-
-- **TypeScript (Frontend):** resolves Minecraft version JSONs, generates JVM arguments, communicates with Modrinth/Mojang APIs
-- **Rust (Backend):** downloads files (JARs, assets, libraries), launches Java process, emits Tauri events, manages the filesystem
-- **Tauri Events:** all long-running operations (download, export, modpack installation) run in background threads and communicate progress via events
+- 🗂️ **Multi-instance** — create, clone, export and import instances as ZIP
+- 🧩 **Vanilla · Fabric · NeoForge** — full loader support with auto-install
+- 🔧 **Mod management** — search, install, update and remove mods via Modrinth
+- 📦 **Modpack install** — one-click `.mrpack` install from Modrinth or URL
+- 🖼️ **Resource packs & Shaders** — browse and install directly from Modrinth
+- ☕ **Auto Java** — downloads the right JRE automatically (Java 8–25)
+- 🔐 **Microsoft login** — Device Code Flow with encrypted token storage (Stronghold)
+- 👥 **Multi-account** — switch between multiple Microsoft accounts
+- 📸 **Snapshots** — full or metadata-only backups before mod updates
+- 🎨 **Accent colors** — 8 color presets, dark/light theme
+- 🌍 **i18n** — English, Polish, German, Japanese, French, Spanish
+- 🔔 **Auto-update** — checks GitHub Releases on every launch
 
 ---
 
-## 📦 Requirements
+## Screenshots
 
-- **Node.js** >= 18
-- **Rust** >= 1.70
-- **npm** >= 9
-
-### Operating Systems
-
-| System | Status |
-|--------|--------|
-| 🪟 Windows | ✅ Tested on Windows 10/11 |
-| 🐧 Linux | ✅ Theoretically works (no local tests) |
-| 🍎 macOS | ✅ Theoretically works (no tests) |
-
-### Supported Game Loaders
-
-| Loader | Status | Notes |
-|--------|--------|-------|
-| 🟢 Vanilla | ✅ Full support | Pure Minecraft, no modifications |
-| 🟡 Fabric | ✅ Full support | Auto-downloads Fabric Loader + Fabric API |
-| 🔵 NeoForge | ✅ Full support | Auto-installs via NeoForge installer JAR |
+| Mod Management | Modpack Install |
+|:---:|:---:|
+| ![Mods](images/mods.png) | ![Modpack](images/modpack.png) |
 
 ---
 
-## 🚀 Quick Start
+## Installation
+
+Download the latest Windows installer from [Releases](https://github.com/AnonBOTpl/Anon-Launcher/releases/latest).
+
+> Linux and macOS: build from source (see below).
+
+---
+
+## Building from source
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/AnonBOTpl/Anon-Launcher.git
 cd Anon-Launcher
-
-# 2. Install dependencies
 npm install
-
-# 3. Run in dev mode
-npm run tauri dev
+npm run tauri dev       # dev mode
+npm run tauri build     # production build
 ```
 
-### Building for Production
-
-```bash
-npm run tauri build
-```
-
-The installer can be found at `src-tauri/target/release/bundle/nsis/`.
+**Requirements:** Node.js ≥ 18 · Rust ≥ 1.70 · npm ≥ 9
 
 ---
 
-## 🗂️ Project Structure
+## Tech Stack
 
-```
-AnonLauncher/
-├── src/                          # Frontend React + TypeScript
-│   ├── components/               # UI components
-│   │   ├── ui/                  # shadcn/ui base components
-│   │   ├── ModSearch.tsx        # Mod search
-│   │   ├── ModList.tsx          # Installed mods list
-│   │   ├── ContentBrowser.tsx   # Resource/shader search
-│   │   ├── ContentList.tsx      # Installed resources/shaders
-│   │   ├── ModpackSearch.tsx    # Modpack search
-│   │   └── ...                 # ~30 components
-│   ├── lib/                     # Business logic
-│   │   ├── minecraft-core.ts    # Launch args generation
-│   │   ├── version-resolver.ts  # MC version resolution
-│   │   ├── modrinth.ts          # Modrinth API client
-│   │   ├── content-installer.ts # Resource/shader API
-│   │   └── ...                 # ~15 modules
-│   ├── hooks/                   # Custom React hooks
-│   ├── pages/                   # Application pages
-│   ├── types/                   # TypeScript types
-│   └── styles/                  # Global styles
-├── src-tauri/                   # Rust backend
-│   ├── src/
-│   │   ├── lib.rs              # Entry point + Tauri commands
-│   │   ├── neoforge_installer.rs # NeoForge installer (event-based)
-│   │   ├── mod_installer.rs    # Mod installation
-│   │   ├── modpack_installer.rs # Modpack (.mrpack) installation
-│   │   ├── content_installer.rs # Resource/shader installation
-│   │   ├── instance_manager.rs  # Instance CRUD
-│   │   ├── process_manager.rs   # Game process management
-│   │   ├── minecraft_core.rs    # Asset/library downloads
-│   │   ├── java_manager.rs      # Java download (Adoptium)
-│   │   ├── auth.rs             # Microsoft + XBL + XSTS auth
-│   │   ├── account_manager.rs   # Account management
-│   │   ├── snapshot.rs         # Snapshot system
-│   │   ├── game_data.rs        # Game overview data
-│   │   ├── zip_export.rs       # ZIP export
-│   │   └── zip_import.rs       # ZIP import
-│   ├── installer/              # NSIS installer graphics
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── tasks/                       # Task specifications
-├── package.json
-├── vite.config.ts
-└── tsconfig.json
-```
+[Tauri v2](https://tauri.app) · [React 19](https://react.dev) · [TypeScript](https://www.typescriptlang.org) · [Rust](https://www.rust-lang.org) · [shadcn/ui](https://ui.shadcn.com) · [Tailwind CSS v4](https://tailwindcss.com)
 
 ---
 
-## 🔧 Development
+## License
 
-### Commands
-
-| Command | Description |
-|---------|-------------|
-| `npm run tauri dev` | Run in dev mode (hot reload) |
-| `npm run tauri build` | Build production version |
-| `npx tsc --noEmit` | Check TypeScript types |
-| `cd src-tauri && cargo check` | Check Rust compilation |
-| `cd src-tauri && cargo test` | Run Rust unit tests |
-
-### Conventions
-
-- TypeScript — strict mode, `noUncheckedIndexedAccess`
-- Rust — clippy lints
-- All Tauri commands use `#[serde(rename_all = "camelCase")]`
-- Tauri events use `:` separator, e.g. `modpack:progress`, `export:complete`
-
----
-
-## 📜 License
-
-This project is licensed under the **GNU Affero General Public License v3.0** — see [LICENSE](LICENSE) for details.
+[AGPL-3.0](LICENSE) · [Privacy Policy](PRIVACY.md) · [Contributing](CONTRIBUTING.md)
 
 ---
 
 <div align="center">
-
-**AnonLauncher** — created by [AnonBOTpl](https://github.com/AnonBOTpl)
-
+Made by <a href="https://github.com/AnonBOTpl">AnonBOTpl</a>
 </div>
